@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Build output
+client/dist/
+client/build/
+
+# Environment variables — NEVER commit these
+server/.env
+client/.env
+.env
+.env.local
+.env.production
+
+# Uploads (user files — not committed)
+server/uploads/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
+
+# Temp scripts
+server/addCourses.mjs
