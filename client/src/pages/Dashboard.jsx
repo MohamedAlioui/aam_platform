@@ -17,6 +17,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import ToastContainer, { useToastStore } from '@/components/ui/Toast';
 import api from '@/utils/api';
+import { supabase, uploadVideo, uploadThumb, deleteFile } from '@/utils/supabase';
 import { io } from 'socket.io-client';
 import { COURSE_CATEGORIES } from '@/utils/constants';
 
@@ -617,6 +618,214 @@ const GalleryManager = () => {
 };
 
 // ═══════════════════════════════
+// TESTIMONIALS MANAGER (Supabase)
+// ═══════════════════════════════
+const TestimonialsManager = () => {
+  const [items, setItems]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [showForm, setShowForm]   = useState(false);
+  const [confirm, setConfirm]     = useState(null);
+  const [form, setForm]           = useState({ name: '', city: '', role: '', stars: 5 });
+  const [videoFile, setVideoFile] = useState(null);
+  const [thumbFile, setThumbFile] = useState(null);
+  const videoRef = useRef(null);
+  const thumbRef = useRef(null);
+  const { success, error: showError } = useToastStore();
+
+  const load = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('testimonials').select('*').order('created_at', { ascending: false });
+    setItems(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleSubmit = async () => {
+    if (!videoFile) { showError('Sélectionnez une vidéo'); return; }
+    setUploading(true);
+    try {
+      const videoUrl = await uploadVideo(videoFile);
+      const thumbUrl = thumbFile ? await uploadThumb(thumbFile) : null;
+      await supabase.from('testimonials').insert([{
+        name: form.name || null,
+        city: form.city || null,
+        role: form.role || null,
+        stars: Number(form.stars),
+        video_url: videoUrl,
+        thumbnail_url: thumbUrl,
+        is_active: true,
+      }]);
+      success('Témoignage ajouté ✓');
+      setShowForm(false);
+      setForm({ name: '', city: '', role: '', stars: 5 });
+      setVideoFile(null);
+      setThumbFile(null);
+      load();
+    } catch (e) { showError('Erreur: ' + e.message); }
+    finally { setUploading(false); }
+  };
+
+  const toggleActive = async (item) => {
+    await supabase.from('testimonials').update({ is_active: !item.is_active }).eq('id', item.id);
+    setItems(prev => prev.map(i => i.id === item.id ? { ...i, is_active: !i.is_active } : i));
+  };
+
+  const handleDelete = async (item) => {
+    await deleteFile(item.video_url);
+    if (item.thumbnail_url) await deleteFile(item.thumbnail_url);
+    await supabase.from('testimonials').delete().eq('id', item.id);
+    setItems(prev => prev.filter(i => i.id !== item.id));
+    success('Supprimé ✓');
+    setConfirm(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+          Témoignages
+        </h2>
+        <Button icon={<Plus size={16} />} onClick={() => setShowForm(true)} size="sm">
+          Ajouter
+        </Button>
+      </div>
+
+      {/* Add form */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+            className="rounded-2xl p-6 space-y-4"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <h3 className="font-display font-bold" style={{ color: 'var(--text-primary)' }}>Nouveau témoignage</h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Input placeholder="Nom (optionnel)" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              <Input placeholder="Ville (optionnel)" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
+              <Input placeholder="Rôle (ex: Étudiante Moulage)" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} />
+              <div>
+                <label className="font-mono text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Étoiles</label>
+                <select value={form.stars} onChange={e => setForm(f => ({ ...f, stars: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-xl text-sm"
+                  style={{ background: 'var(--bg-section)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
+                  {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} ★</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Video upload */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="font-mono text-xs mb-2 block" style={{ color: 'var(--text-muted)' }}>
+                  Vidéo * (.mp4, .mov, .webm)
+                </label>
+                <div onClick={() => videoRef.current?.click()}
+                  className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors"
+                  style={{ borderColor: videoFile ? 'var(--blue)' : 'var(--border)' }}>
+                  {videoFile ? (
+                    <p className="font-mono text-xs" style={{ color: 'var(--blue)' }}>{videoFile.name}</p>
+                  ) : (
+                    <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Cliquez pour choisir une vidéo</p>
+                  )}
+                  <input ref={videoRef} type="file" accept="video/*" className="hidden"
+                    onChange={e => setVideoFile(e.target.files[0])} />
+                </div>
+              </div>
+              <div>
+                <label className="font-mono text-xs mb-2 block" style={{ color: 'var(--text-muted)' }}>
+                  Miniature (optionnel)
+                </label>
+                <div onClick={() => thumbRef.current?.click()}
+                  className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors"
+                  style={{ borderColor: thumbFile ? 'var(--blue)' : 'var(--border)' }}>
+                  {thumbFile ? (
+                    <p className="font-mono text-xs" style={{ color: 'var(--blue)' }}>{thumbFile.name}</p>
+                  ) : (
+                    <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Cliquez pour choisir une image</p>
+                  )}
+                  <input ref={thumbRef} type="file" accept="image/*" className="hidden"
+                    onChange={e => setThumbFile(e.target.files[0])} />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button onClick={handleSubmit} loading={uploading} icon={<Upload size={14} />}>
+                {uploading ? 'Upload en cours...' : 'Enregistrer'}
+              </Button>
+              <Button variant="secondary" onClick={() => setShowForm(false)}>Annuler</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* List */}
+      {loading ? (
+        <div className="text-center py-12 font-mono text-sm" style={{ color: 'var(--text-muted)' }}>Chargement...</div>
+      ) : items.length === 0 ? (
+        <div className="text-center py-12 font-mono text-sm" style={{ color: 'var(--text-muted)' }}>Aucun témoignage</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map(item => (
+            <div key={item.id} className="rounded-2xl overflow-hidden"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', opacity: item.is_active ? 1 : 0.5 }}>
+              {/* Video preview */}
+              <div className="relative aspect-video bg-black">
+                {item.thumbnail_url ? (
+                  <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <video src={item.video_url} className="w-full h-full object-cover" muted />
+                )}
+                <div className="absolute top-2 right-2 flex gap-1">
+                  <span className="font-mono text-[10px] px-2 py-0.5 rounded-full"
+                    style={{ background: item.is_active ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
+                             color: item.is_active ? '#16a34a' : '#dc2626' }}>
+                    {item.is_active ? 'Actif' : 'Masqué'}
+                  </span>
+                </div>
+              </div>
+              {/* Info */}
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {item.name || 'Anonyme'}
+                    </p>
+                    <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {[item.role, item.city].filter(Boolean).join(' · ') || '—'}
+                    </p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--gold)' }}>{'★'.repeat(item.stars || 5)}</p>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <button onClick={() => toggleActive(item)}
+                      className="p-1.5 rounded-lg transition-colors"
+                      style={{ background: 'var(--bg-section)', color: 'var(--text-muted)' }}
+                      title={item.is_active ? 'Masquer' : 'Afficher'}>
+                      {item.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
+                    <button onClick={() => setConfirm(item)}
+                      className="p-1.5 rounded-lg transition-colors hover:bg-red-50 hover:text-red-500"
+                      style={{ background: 'var(--bg-section)', color: 'var(--text-muted)' }}>
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmModal isOpen={!!confirm} onClose={() => setConfirm(null)}
+        message={`Supprimer le témoignage de "${confirm?.name || 'Anonyme'}" ? La vidéo sera supprimée définitivement.`}
+        onConfirm={() => handleDelete(confirm)} />
+    </div>
+  );
+};
+
+// ═══════════════════════════════
 // MAIN DASHBOARD SHELL
 // ═══════════════════════════════
 const Dashboard = () => {
@@ -667,7 +876,8 @@ const Dashboard = () => {
             <Route index                element={<Overview />} />
             <Route path="courses"       element={<CoursesManager />} />
             <Route path="registrations" element={<RegistrationsManager />} />
-            <Route path="gallery"       element={<GalleryManager />} />
+            <Route path="gallery"        element={<GalleryManager />} />
+            <Route path="testimonials"  element={<TestimonialsManager />} />
             <Route path="products"      element={<ProductsManager />} />
             <Route path="orders"        element={<OrdersManager />} />
             <Route path="users"         element={<UsersManager />} />

@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   LayoutDashboard, BookOpen, Image, ShoppingBag,
-  Users, ClipboardList, Package, LogOut, X
+  Users, ClipboardList, Package, LogOut, X, MessageSquareQuote
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
@@ -11,6 +11,7 @@ const links = [
   { to: '/dashboard/courses', icon: <BookOpen size={18} />, label: 'Cours' },
   { to: '/dashboard/registrations', icon: <ClipboardList size={18} />, label: 'Inscriptions' },
   { to: '/dashboard/gallery', icon: <Image size={18} />, label: 'Galerie' },
+  { to: '/dashboard/testimonials', icon: <MessageSquareQuote size={18} />, label: 'Témoignages' },
   { to: '/dashboard/products', icon: <Package size={18} />, label: 'Produits 6ix' },
   { to: '/dashboard/orders', icon: <ShoppingBag size={18} />, label: 'Commandes' },
   { to: '/dashboard/users', icon: <Users size={18} />, label: 'Utilisateurs' }
