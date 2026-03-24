@@ -1,81 +1,60 @@
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
 
-// Ensure upload directories exist
-const ensureDir = (dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-};
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// Storage configuration
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    let uploadPath = './uploads/';
-
-    if (req.baseUrl.includes('gallery')) {
-      uploadPath += 'gallery/';
-    } else if (req.baseUrl.includes('courses')) {
-      uploadPath += 'courses/';
-    } else if (req.baseUrl.includes('products')) {
-      uploadPath += 'products/';
-    } else {
-      uploadPath += 'misc/';
-    }
-
-    ensureDir(uploadPath);
-    cb(null, uploadPath);
+// Dynamic folder based on route
+const makeStorage = (folder) => new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: `aam/${folder}`,
+    allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
+    transformation: [{ quality: 'auto', fetch_format: 'auto' }],
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `aam-${uniqueSuffix}${ext}`);
-  }
 });
 
 // File filter — images only
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp|avif/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
+const imageFilter = (req, file, cb) => {
+  const allowed = /jpeg|jpg|png|gif|webp|avif/;
+  if (allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files are allowed (JPEG, PNG, GIF, WebP, AVIF)'));
   }
-  cb(new Error('Only image files (JPEG, PNG, GIF, WebP, AVIF) are allowed'));
 };
 
-// Multer instance
 export const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB max
-  }
+  storage: new CloudinaryStorage({
+    cloudinary,
+    params: (req) => {
+      let folder = 'misc';
+      if (req.baseUrl?.includes('gallery'))  folder = 'gallery';
+      if (req.baseUrl?.includes('courses'))  folder = 'courses';
+      if (req.baseUrl?.includes('products')) folder = 'products';
+      return {
+        folder: `aam/${folder}`,
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif'],
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+      };
+    },
+  }),
+  fileFilter: imageFilter,
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-// 3D model upload (GLB/GLTF)
-const modelStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = './uploads/models/';
-    ensureDir(uploadPath);
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `model-${uniqueSuffix}${ext}`);
-  }
-});
-
+// 3D model upload — memory storage (no Cloudinary for GLB)
 export const uploadModel = multer({
-  storage: modelStorage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB for 3D models
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.originalname.match(/\.(glb|gltf)$/)) {
-      return cb(null, true);
-    }
-    cb(new Error('Only GLB/GLTF 3D model files are allowed'));
-  }
+    if (file.originalname.match(/\.(glb|gltf)$/)) return cb(null, true);
+    cb(new Error('Only GLB/GLTF files are allowed'));
+  },
 });

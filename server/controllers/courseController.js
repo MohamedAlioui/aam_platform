@@ -38,7 +38,7 @@ export const getCourse = async (req, res) => {
 export const createCourse = async (req, res) => {
   try {
     const courseData = { ...req.body };
-    if (req.file) courseData.image = `/uploads/courses/${req.file.filename}`;
+    if (req.file) courseData.image = req.file.path;
 
     const course = await Course.create(courseData);
     res.status(201).json({ success: true, course });
@@ -53,7 +53,7 @@ export const createCourse = async (req, res) => {
 export const updateCourse = async (req, res) => {
   try {
     const updateData = { ...req.body };
-    if (req.file) updateData.image = `/uploads/courses/${req.file.filename}`;
+    if (req.file) updateData.image = req.file.path;
 
     const course = await Course.findByIdAndUpdate(req.params.id, updateData, {
       new: true,

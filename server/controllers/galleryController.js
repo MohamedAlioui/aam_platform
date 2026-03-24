@@ -20,7 +20,7 @@ export const uploadImage = async (req, res) => {
 
     const { title_ar, title_fr, category, featured } = req.body;
     const image = await GalleryImage.create({
-      url: `/uploads/gallery/${req.file.filename}`,
+      url: req.file.path,
       title_ar,
       title_fr,
       category,

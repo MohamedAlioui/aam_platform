@@ -29,7 +29,7 @@ export const createProduct = async (req, res) => {
     const productData = { ...req.body, brand: '6ix' };
 
     if (req.files && req.files.images) {
-      productData.images = req.files.images.map(f => `/uploads/products/${f.filename}`);
+      productData.images = req.files.images.map(f => f.path);
     }
 
     const product = await Product.create(productData);
@@ -44,7 +44,7 @@ export const updateProduct = async (req, res) => {
     const updateData = { ...req.body };
 
     if (req.files && req.files.images) {
-      updateData.images = req.files.images.map(f => `/uploads/products/${f.filename}`);
+      updateData.images = req.files.images.map(f => f.path);
     }
 
     const product = await Product.findByIdAndUpdate(req.params.id, updateData, {
