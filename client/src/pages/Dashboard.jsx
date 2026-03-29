@@ -1040,10 +1040,10 @@ const TestimonialsManager = () => {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-y lg:divide-y-0 lg:divide-x" style={{ '--tw-divide-color': 'var(--border)' }}>
               {/* Left — fields */}
-              <div className="p-6 space-y-4" style={{ borderRight: '1px solid var(--border)' }}>
-                <div className="grid grid-cols-2 gap-3">
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Input placeholder="Nom (optionnel)" value={form.name}
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
                   <Input placeholder="Ville (optionnel)" value={form.city}

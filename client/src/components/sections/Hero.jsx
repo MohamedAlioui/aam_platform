@@ -115,7 +115,17 @@ const Hero = () => {
             className="grid grid-cols-2 md:grid-cols-4 rounded-2xl overflow-hidden"
             style={{ border: '1px solid var(--border)', background: 'var(--bg-card)', boxShadow: 'var(--shadow-card)' }}>
             {STATS.map((stat, i) => (
-              <div key={i} style={{ borderRight: i < 3 ? '1px solid var(--border)' : 'none' }}>
+              <div
+                key={i}
+                /* Mobile 2-col: right border only on left-column items (even index), bottom border on first row */
+                /* Desktop 4-col: right border on all except last */
+                className={[
+                  i % 2 === 0 ? 'border-r' : '',
+                  i < 2     ? 'border-b md:border-b-0' : '',
+                  i < 3     ? 'md:border-r' : 'md:border-r-0',
+                ].join(' ')}
+                style={{ borderColor: 'var(--border)' }}
+              >
                 <Counter {...stat} index={i} />
               </div>
             ))}

@@ -111,99 +111,25 @@ const CourseDetail = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10">
 
-          {/* Main */}
-          <div className="lg:col-span-2">
-            <Link to="/courses" className="inline-flex items-center gap-2 font-mono text-xs mb-6 transition-colors"
-              style={{ color: 'var(--text-muted)' }}
-              onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'}
-              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-            >
-              <ArrowLeft size={13} /> Tous les cours
-            </Link>
+          {/*
+            DOM order: Sidebar first — so on mobile (single column) the
+            price card and CTA appear at the top, above the course details.
+            On desktop, lg:order-1 / lg:order-2 restore the visual order.
+          */}
 
-            <h1 className="font-arabic text-3xl md:text-4xl font-bold mb-2 leading-tight"
-              style={{ direction: 'rtl', color: 'var(--text-primary)' }}>
-              {course.title_ar}
-            </h1>
-            <p className="font-editorial italic text-xl mb-6" style={{ color: 'var(--text-muted)' }}>
-              {course.title_fr}
-            </p>
-
-            <div className="flex flex-wrap gap-4 mb-8 font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-              <span className="flex items-center gap-2">
-                <Clock size={13} style={{ color: 'var(--blue)' }} /> {course.duration}
-              </span>
-              <span className="flex items-center gap-2">
-                <Users size={13} style={{ color: 'var(--blue)' }} /> {course.enrolledCount} inscrits
-              </span>
-              <span className="flex items-center gap-2">
-                <BookOpen size={13} style={{ color: 'var(--blue)' }} /> {course.level}
-              </span>
-              <span className="flex items-center gap-2">
-                <Award size={13} style={{ color: 'var(--gold)' }} /> Certificat AAM
-              </span>
-            </div>
-
-            {/* Description */}
-            <div className="rounded-2xl p-6 mb-6"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
-              <p className="font-mono text-xs mb-3 uppercase tracking-widest" style={{ color: 'var(--blue)' }}>Description</p>
-              <p className="font-arabic text-sm leading-loose mb-3"
-                style={{ direction: 'rtl', color: 'var(--text-secondary)' }}>
-                {course.description_ar}
-              </p>
-              <p className="font-arabic text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                {course.description_fr}
-              </p>
-            </div>
-
-            {/* Instructor */}
-            {course.instructor && (
-              <div className="rounded-2xl p-6 mb-6"
-                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
-                <p className="font-mono text-xs mb-4 uppercase tracking-widest" style={{ color: 'var(--blue)' }}>Instructeur</p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: 'linear-gradient(135deg, var(--blue), var(--blue-light))' }}>
-                    <span className="font-display text-lg font-bold text-white">
-                      {course.instructor.name?.[0] || 'I'}
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-arabic font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {course.instructor.name}
-                    </p>
-                    <p className="font-arabic text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                      {course.instructor.bio}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Curriculum */}
-            {course.curriculum?.length > 0 && (
-              <div>
-                <p className="font-mono text-xs mb-4 uppercase tracking-widest" style={{ color: 'var(--blue)' }}>Programme</p>
-                {course.curriculum.map((item, i) => (
-                  <CurriculumItem key={i} {...item} />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24 rounded-2xl p-6"
+          {/* Sidebar — first in DOM (mobile: top), right column on desktop */}
+          <div className="lg:col-span-1 lg:order-2">
+            <div className="sticky top-24 rounded-2xl p-5 sm:p-6"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-hover)' }}>
 
-              <div className="font-display text-4xl font-bold mb-1" style={{ color: 'var(--blue)' }}>
+              <div className="font-display font-bold mb-1"
+                style={{ color: 'var(--blue)', fontSize: 'clamp(1.8rem, 5vw, 2.25rem)' }}>
                 {course.price?.toLocaleString()} TND
               </div>
-              <p className="font-mono text-xs mb-6 tracking-widest" style={{ color: 'var(--text-muted)' }}>
+              <p className="font-mono text-xs mb-5 tracking-widest" style={{ color: 'var(--text-muted)' }}>
                 PRIX DE LA FORMATION
               </p>
 
@@ -242,6 +168,89 @@ const CourseDetail = () => {
               </div>
             </div>
           </div>
+
+          {/* Main content — second in DOM (mobile: below sidebar), left 2-cols on desktop */}
+          <div className="lg:col-span-2 lg:order-1">
+            <Link to="/courses"
+              className="inline-flex items-center gap-2 font-mono text-xs mb-6 transition-colors"
+              style={{ color: 'var(--text-muted)', minHeight: 44, alignItems: 'center' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              <ArrowLeft size={13} /> Tous les cours
+            </Link>
+
+            <h1 className="font-arabic font-bold mb-2 leading-tight"
+              style={{ direction: 'rtl', color: 'var(--text-primary)', fontSize: 'clamp(1.6rem, 4vw, 2.25rem)' }}>
+              {course.title_ar}
+            </h1>
+            <p className="font-editorial italic text-lg sm:text-xl mb-6" style={{ color: 'var(--text-muted)' }}>
+              {course.title_fr}
+            </p>
+
+            <div className="flex flex-wrap gap-3 mb-8 font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+              <span className="flex items-center gap-2">
+                <Clock size={13} style={{ color: 'var(--blue)' }} /> {course.duration}
+              </span>
+              <span className="flex items-center gap-2">
+                <Users size={13} style={{ color: 'var(--blue)' }} /> {course.enrolledCount} inscrits
+              </span>
+              <span className="flex items-center gap-2">
+                <BookOpen size={13} style={{ color: 'var(--blue)' }} /> {course.level}
+              </span>
+              <span className="flex items-center gap-2">
+                <Award size={13} style={{ color: 'var(--gold)' }} /> Certificat AAM
+              </span>
+            </div>
+
+            {/* Description */}
+            <div className="rounded-2xl p-5 sm:p-6 mb-6"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
+              <p className="font-mono text-xs mb-3 uppercase tracking-widest" style={{ color: 'var(--blue)' }}>Description</p>
+              <p className="font-arabic text-sm leading-loose mb-3"
+                style={{ direction: 'rtl', color: 'var(--text-secondary)' }}>
+                {course.description_ar}
+              </p>
+              <p className="font-arabic text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                {course.description_fr}
+              </p>
+            </div>
+
+            {/* Instructor */}
+            {course.instructor && (
+              <div className="rounded-2xl p-5 sm:p-6 mb-6"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
+                <p className="font-mono text-xs mb-4 uppercase tracking-widest" style={{ color: 'var(--blue)' }}>Instructeur</p>
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: 'linear-gradient(135deg, var(--blue), var(--blue-light))' }}>
+                    <span className="font-display text-lg font-bold text-white">
+                      {course.instructor.name?.[0] || 'I'}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-arabic font-bold" style={{ color: 'var(--text-primary)' }}>
+                      {course.instructor.name}
+                    </p>
+                    <p className="font-arabic text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                      {course.instructor.bio}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Curriculum */}
+            {course.curriculum?.length > 0 && (
+              <div>
+                <p className="font-mono text-xs mb-4 uppercase tracking-widest" style={{ color: 'var(--blue)' }}>Programme</p>
+                {course.curriculum.map((item, i) => (
+                  <CurriculumItem key={i} {...item} />
+                ))}
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
       <ToastContainer />

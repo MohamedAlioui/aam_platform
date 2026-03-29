@@ -53,7 +53,8 @@ const FounderSection = () => (
         <div>
           <motion.div {...fade(0.1)}>
             <span className="section-label">المؤسس — Fondateur</span>
-            <h2 className="font-display text-4xl md:text-5xl font-black mt-2 mb-1" style={{ color: 'var(--text-primary)' }}>
+            <h2 className="font-display font-black mt-2 mb-1"
+              style={{ color: 'var(--text-primary)', fontSize: 'clamp(1.8rem, 5vw, 3rem)' }}>
               {FOUNDER.name}
             </h2>
             <p className="font-arabic text-2xl mb-1" style={{ direction: 'rtl', color: 'var(--blue)' }}>
@@ -121,16 +122,16 @@ const AboutPage = () => (
   <main style={{ background: 'var(--bg-page)', minHeight: '100vh' }}>
 
     {/* Hero banner */}
-    <section className="relative pt-24 pb-16 overflow-hidden"
+    <section className="relative pt-24 pb-12 sm:pb-16 overflow-hidden"
       style={{ background: 'linear-gradient(135deg, var(--bg-section) 0%, var(--bg-page) 100%)' }}>
       <div className="absolute inset-0 pattern-arabic opacity-30 pointer-events-none" />
-      <div className="max-w-6xl mx-auto px-6 text-center relative z-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center relative z-10">
         <motion.div {...fade(0)}>
           <span className="section-label">Notre Académie</span>
           <h1 className="section-title mb-2" style={{ direction: 'rtl' }}>
             عن <span className="text-gradient-blue">الأكاديمية</span>
           </h1>
-          <p className="font-editorial italic text-xl" style={{ color: 'var(--text-muted)' }}>
+          <p className="font-editorial italic text-lg sm:text-xl" style={{ color: 'var(--text-muted)' }}>
             À Propos de l'Académie
           </p>
         </motion.div>
@@ -156,7 +157,8 @@ const AboutPage = () => (
           </div>
         </motion.div>
         <motion.div {...fade(0.15)}>
-          <h2 className="font-display text-4xl md:text-5xl font-bold mb-1" style={{ color: 'var(--gold)' }}>
+          <h2 className="font-display font-bold mb-1"
+            style={{ color: 'var(--gold)', fontSize: 'clamp(1.8rem, 5vw, 3rem)' }}>
             Guinness World Record™
           </h2>
           <p className="font-display text-lg mb-8" style={{ color: 'var(--text-muted)' }}>2009</p>

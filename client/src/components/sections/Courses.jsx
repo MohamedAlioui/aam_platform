@@ -151,19 +151,21 @@ const Courses = () => {
           <CourseCarousel3D courses={courses} />
         </div>
 
-        {/* Filter pills */}
-        <div className="flex gap-2 flex-wrap justify-center mb-10">
+        {/* Filter pills — horizontal scroll on mobile */}
+        <div className="filter-scroll justify-center md:flex-wrap mb-10">
           {COURSE_CATEGORIES.map(cat => (
             <button
               key={cat.value}
               onClick={() => setActiveCategory(cat.value)}
-              className="font-arabic text-sm px-4 py-2 rounded-full transition-all duration-200"
+              className="font-arabic text-sm px-4 rounded-full transition-all duration-200 shrink-0"
               style={{
                 background: activeCategory === cat.value ? 'var(--blue)' : 'var(--bg-card)',
                 color:      activeCategory === cat.value ? '#ffffff' : 'var(--text-muted)',
                 border:     activeCategory === cat.value ? '1px solid var(--blue)' : '1px solid var(--border)',
                 fontWeight: activeCategory === cat.value ? '700' : '400',
                 boxShadow:  activeCategory === cat.value ? '0 4px 12px var(--blue-glow)' : 'none',
+                minHeight: 40,
+                whiteSpace: 'nowrap',
               }}
             >
               {cat.label_fr}
@@ -185,7 +187,7 @@ const Courses = () => {
             : filtered.map((course, i) => <CourseCard key={course._id} course={course} index={i} />)
           }
           {!loading && filtered.length === 0 && (
-            <div className="col-span-3 text-center py-16 rounded-2xl font-arabic"
+            <div className="col-span-full text-center py-16 rounded-2xl font-arabic"
               style={{ color: 'var(--text-muted)', background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
               لا توجد كورسات في هذه الفئة
             </div>

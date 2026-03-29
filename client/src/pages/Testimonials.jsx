@@ -147,8 +147,8 @@ const TestimonialsPage = () => {
 
       {/* Stats */}
       <section className="py-8 border-y" style={{ background: 'var(--bg-section)', borderColor: 'var(--border)' }}>
-        <div className="max-w-4xl mx-auto px-6">
-          <div className="grid grid-cols-3 gap-6 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-center">
             {[
               { value: '1000+', label_ar: 'طالب تخرج',    label_fr: 'Diplômés'    },
               { value: '5★',    label_ar: 'تقييم الطلاب', label_fr: 'Satisfaction' },
@@ -156,8 +156,11 @@ const TestimonialsPage = () => {
             ].map((s, i) => (
               <motion.div key={i}
                 initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: i * 0.1 }}>
-                <p className="font-display text-2xl md:text-3xl font-black text-gradient-blue">{s.value}</p>
+                viewport={{ once: true }} transition={{ delay: i * 0.1 }}
+                className="py-2"
+              >
+                <p className="font-display font-black text-gradient-blue"
+                  style={{ fontSize: 'clamp(1.5rem, 4vw, 2rem)' }}>{s.value}</p>
                 <p className="font-arabic text-xs mt-1" style={{ direction: 'rtl', color: 'var(--text-muted)' }}>{s.label_ar}</p>
                 <p className="font-editorial italic text-xs" style={{ color: 'var(--text-muted)' }}>{s.label_fr}</p>
               </motion.div>
@@ -170,7 +173,8 @@ const TestimonialsPage = () => {
       <section className="section-padding">
         <div className="max-w-6xl mx-auto px-6">
           {loading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid gap-4"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(180px, 100%), 1fr))' }}>
               {[1,2,3,4].map(i => (
                 <div key={i} className="rounded-2xl animate-pulse"
                   style={{ aspectRatio: '9/16', background: 'var(--bg-section)' }} />
@@ -182,7 +186,8 @@ const TestimonialsPage = () => {
               <p className="font-editorial italic text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Aucun témoignage pour le moment</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
+              style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(180px, 100%), 1fr))' }}>
               {items.map((item, i) => <ReelCard key={item.id} item={item} index={i} />)}
             </div>
           )}

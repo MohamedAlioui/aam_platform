@@ -138,7 +138,7 @@ const Contact = () => {
                   className="rounded-2xl p-6 md:p-8 flex flex-col gap-4"
                   style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}
                 >
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="contact-field">
                       <Input name="name" value={form.name} onChange={handleChange}
                         placeholder="Votre nom / اسمك" required />

@@ -150,12 +150,13 @@ body {
   border-radius: 0.6rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  /* 44px minimum touch target */
+  min-height: 44px;
+  /* Prevent text wrapping on small screens */
+  white-space: nowrap;
 }
-.btn-primary:hover {
-  background: #1d4ed8; /* darkens on hover — was var(--blue-light) which lightened */
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px var(--blue-glow);
-}
+.btn-primary:hover  { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 20px var(--blue-glow); }
+.btn-primary:active { background: #1e40af; transform: translateY(0); box-shadow: none; }
 
 .btn-outline {
   display: inline-flex;
@@ -172,11 +173,11 @@ body {
   border-radius: 0.6rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: 44px;
+  white-space: nowrap;
 }
-.btn-outline:hover {
-  background: var(--blue-pale);
-  transform: translateY(-2px);
-}
+.btn-outline:hover  { background: var(--blue-pale); transform: translateY(-2px); }
+.btn-outline:active { background: var(--blue-pale); transform: translateY(0); }
 
 .btn-secondary {
   display: inline-flex;
@@ -194,13 +195,11 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   text-decoration: none;
+  min-height: 44px;
+  white-space: nowrap;
 }
-.btn-secondary:hover {
-  border-color: var(--blue);
-  color: var(--blue);
-  background: var(--blue-pale);
-  transform: translateY(-2px);
-}
+.btn-secondary:hover  { border-color: var(--blue); color: var(--blue); background: var(--blue-pale); transform: translateY(-2px); }
+.btn-secondary:active { border-color: var(--blue); color: var(--blue); background: var(--blue-pale); transform: translateY(0); }
 
 .btn-gold {
   display: inline-flex;
@@ -217,12 +216,11 @@ body {
   border-radius: 0.6rem;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: 44px;
+  white-space: nowrap;
 }
-.btn-gold:hover {
-  background: var(--gold-light);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(217,119,6,0.22);
-}
+.btn-gold:hover  { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(217,119,6,0.22); }
+.btn-gold:active { background: var(--gold-light); transform: translateY(0); box-shadow: none; }
 
 /* ════════════════════════════════════════
    FORM INPUTS
@@ -235,9 +233,12 @@ body {
   padding: 0.75rem 1rem;
   border-radius: 0.6rem;
   font-family: 'Cairo', sans-serif;
-  font-size: 0.9rem;
+  /* 1rem = 16px — prevents iOS Safari from zooming on focus */
+  font-size: 1rem;
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
   outline: none;
+  /* Ensure readable touch target height */
+  min-height: 44px;
 }
 .aam-input::placeholder { color: var(--text-muted); }
 .aam-input:focus {
@@ -248,9 +249,36 @@ body {
 /* ════════════════════════════════════════
    SECTION UTILITIES
    ════════════════════════════════════════ */
-.section-padding { padding: 5rem 1.5rem; }
+.section-padding { padding: 3rem 1rem; }
+@media (min-width: 480px)  { .section-padding { padding: 4rem 1.5rem; } }
 @media (min-width: 768px)  { .section-padding { padding: 6rem 3rem; } }
 @media (min-width: 1024px) { .section-padding { padding: 7rem 6rem; } }
+
+/* ── Filter pill row — horizontal scroll on mobile ── */
+.filter-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  /* hide scrollbar visually but keep functional */
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 4px; /* prevents bottom clip on shadows */
+}
+.filter-scroll::-webkit-scrollbar { display: none; }
+/* Bleed past safe-area padding on both sides */
+@media (max-width: 767px) {
+  .filter-scroll {
+    /* negative margin + padding trick — bleeds to screen edge, scrollable */
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* ── Prevent minimum-width issues on grid containers ── */
+.grid-safe { min-width: 0; }
 
 .section-title {
   font-family: 'Playfair Display', serif;
