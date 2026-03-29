@@ -76,14 +76,8 @@ const CourseCard = ({ course, index }) => {
         <div className="flex items-center gap-2 mb-4 flex-wrap">
           <span className="font-mono text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg"
             style={{ background: colors.light, color: 'var(--text-secondary)', border: '1px solid var(--border)' }}>
-            {course.level}
+            {course.level}{LEVEL_MAP[course.level] ? ` — ${LEVEL_MAP[course.level]}` : ''}
           </span>
-          {LEVEL_MAP[course.level] && (
-            <span className="font-mono text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-lg"
-              style={{ background: 'var(--bg-section)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
-              {LEVEL_MAP[course.level]}
-            </span>
-          )}
         </div>
 
         <div className="mt-auto flex items-center justify-between pt-4" style={{ borderTop: '1px solid var(--border)' }}>

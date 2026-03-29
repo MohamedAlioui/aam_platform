@@ -60,14 +60,25 @@ const Footer = ({ variant = 'default' }) => {
             <h3 className="font-arabic text-sm font-bold mb-4" style={{ color: 'var(--blue)' }}>تواصل معنا</h3>
             <ul className="space-y-3">
               {[
-                { icon: <MapPin size={13} />,    text: 'تونس — Tunisie' },
-                { icon: <Phone size={13} />,     text: '+216 XX XXX XXX' },
-                { icon: <Mail size={13} />,      text: 'contact@aam.tn' },
-                { icon: <Instagram size={13} />, text: '@academie_arabe_mode' },
+                { icon: <MapPin size={13} />,    text: 'تونس — Tunisie',           href: null },
+                { icon: <Phone size={13} />,     text: '+216 XX XXX XXX',          href: 'tel:+21600000000' },
+                { icon: <Mail size={13} />,      text: 'contact@aam.tn',           href: 'mailto:contact@aam.tn' },
+                { icon: <Instagram size={13} />, text: '@academie_arabe_mode',     href: 'https://instagram.com/academie_arabe_mode' },
               ].map((item, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <span style={{ color: 'var(--blue)' }}>{item.icon}</span>
-                  <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{item.text}</span>
+                  {item.href ? (
+                    <a href={item.href}
+                      target={item.href.startsWith('http') ? '_blank' : undefined}
+                      rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
+                      className="font-mono text-xs transition-colors"
+                      style={{ color: 'var(--text-muted)', textDecoration: 'none' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                    >{item.text}</a>
+                  ) : (
+                    <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{item.text}</span>
+                  )}
                 </li>
               ))}
             </ul>

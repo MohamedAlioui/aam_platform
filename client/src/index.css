@@ -45,7 +45,7 @@
 
   --text-primary:   #e8f1ff;
   --text-secondary: #93b8d8;
-  --text-muted:     #527090;
+  --text-muted:     #7a96b2; /* was #527090 — raised to ~5.1:1 on --bg-page for WCAG AA */
 
   --blue:           #3b82f6;
   --blue-light:     #93c5fd;
@@ -71,7 +71,7 @@
    BASE
    ════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* scroll-behavior: smooth intentionally removed — Lenis handles all smooth scrolling */
 
 body {
   background-color: var(--bg-page);
@@ -152,7 +152,7 @@ body {
   transition: all 0.2s ease;
 }
 .btn-primary:hover {
-  background: var(--blue-light);
+  background: #1d4ed8; /* darkens on hover — was var(--blue-light) which lightened */
   transform: translateY(-2px);
   box-shadow: 0 6px 20px var(--blue-glow);
 }
@@ -174,6 +174,30 @@ body {
   transition: all 0.2s ease;
 }
 .btn-outline:hover {
+  background: var(--blue-pale);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 2rem;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  border-radius: 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+.btn-secondary:hover {
+  border-color: var(--blue);
+  color: var(--blue);
   background: var(--blue-pale);
   transform: translateY(-2px);
 }
@@ -304,10 +328,17 @@ body {
 
 /* ════════════════════════════════════════
    THEME TRANSITION
+   Scoped to elements that actually change on theme switch.
+   Avoids applying transitions to every DOM node (perf).
    ════════════════════════════════════════ */
-*, *::before, *::after {
+body, nav, footer, main,
+a, button, input, select, textarea,
+.card-aam, .glass, .glass-dark,
+.btn-primary, .btn-secondary, .btn-outline, .btn-gold,
+.aam-input, .section-label, .skeleton {
   transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
-canvas, [class*="motion"], [class*="framer"] {
+canvas, svg, img,
+[class*="motion-"], [class*="framer-"] {
   transition: none !important;
 }

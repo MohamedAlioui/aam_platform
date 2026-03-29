@@ -16,8 +16,6 @@ const Input = forwardRef(({ label, error, icon, className = '', ...props }, ref)
       )}
       <motion.input
         ref={ref}
-        whileFocus={{ borderColor: '#00b8d4', boxShadow: '0 0 0 3px rgba(0,184,212,0.15)' }}
-        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         className={`aam-input ${icon ? 'pl-11' : ''} ${error ? 'border-red-500/50' : ''} ${className}`}
         {...props}
       />

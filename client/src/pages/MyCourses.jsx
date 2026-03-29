@@ -14,8 +14,10 @@ const STATUS_CONFIG = {
 };
 
 const PAYMENT_CONFIG = {
-  paid:    { label: 'Payé',          color: '#22c55e' },
-  pending: { label: 'Non payé',      color: '#f59e0b' },
+  paid:     { label: 'Payé',         color: '#22c55e' },
+  unpaid:   { label: 'Non payé',     color: '#f59e0b' },
+  pending:  { label: 'Non payé',     color: '#f59e0b' }, // legacy fallback
+  refunded: { label: 'Remboursé',    color: '#6366f1' },
 };
 
 const RegistrationCard = ({ reg, index }) => {
@@ -170,7 +172,7 @@ const MyCourses = () => {
             <div className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5" style={{ background: 'var(--blue-pale)' }}>
               <BookOpen size={32} style={{ color: 'var(--blue)' }} />
             </div>
-            <h3 className="font-arabic text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>لا توجد إنشاءات بعد</h3>
+            <h3 className="font-arabic text-xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>لا توجد تسجيلات بعد</h3>
             <p className="font-editorial italic text-lg mb-6" style={{ color: 'var(--text-muted)' }}>
               Vous n'avez pas encore de formations
             </p>

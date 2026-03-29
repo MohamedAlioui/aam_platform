@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -13,14 +13,18 @@ const Login = () => {
   const { login, isLoading, error, clearError, isAuthenticated } = useAuthStore();
   const { error: showError } = useToastStore();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  useEffect(() => { if (isAuthenticated) navigate('/'); }, [isAuthenticated]);
+  // Redirect to intended page, or / as fallback
+  const from = location.state?.from || '/';
+
+  useEffect(() => { if (isAuthenticated) navigate(from, { replace: true }); }, [isAuthenticated]);
   useEffect(() => { if (error) { showError(error); clearError(); } }, [error]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await login(form.email, form.password);
-    if (result.success) navigate('/');
+    if (result.success) navigate(from, { replace: true });
   };
 
   return (
@@ -59,26 +63,38 @@ const Login = () => {
               icon={<Mail size={15} />}
               required
             />
-            <div className="relative">
-              <Input
-                label="Mot de passe"
-                type={showPass ? 'text' : 'password'}
-                value={form.password}
-                onChange={e => setForm({ ...form, password: e.target.value })}
-                placeholder="••••••••"
-                icon={<Lock size={15} />}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                className="absolute right-3 bottom-3 transition-colors"
-                style={{ color: 'var(--text-muted)' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-              >
-                {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
+
+            {/* Password field with properly centered toggle */}
+            <div>
+              <label className="block font-mono text-xs tracking-widest uppercase mb-2"
+                style={{ color: 'var(--text-muted)' }}>
+                Mot de passe
+              </label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: 'var(--text-muted)' }}>
+                  <Lock size={15} />
+                </span>
+                <input
+                  type={showPass ? 'text' : 'password'}
+                  value={form.password}
+                  onChange={e => setForm({ ...form, password: e.target.value })}
+                  placeholder="••••••••"
+                  className="aam-input pl-11 pr-11"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass(!showPass)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: 'var(--text-muted)' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  aria-label={showPass ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
+                  {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
             </div>
 
             <Button type="submit" loading={isLoading} className="mt-1 w-full">
