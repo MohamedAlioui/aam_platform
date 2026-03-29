@@ -1,21 +1,35 @@
 import { useState, useEffect, Suspense, useRef } from 'react';
-import { motion, AnimatePresence, useInView } from 'framer-motion';
-import { MapPin, Clock, Phone, ChevronRight, Zap, MessageCircle, CalendarCheck, Navigation, Store } from 'lucide-react';
+import { motion, AnimatePresence, useInView, useScroll, useTransform } from 'framer-motion';
+import { MapPin, Clock, Phone, ChevronRight, MessageCircle, CalendarCheck, Navigation, Store, Sparkles, Diamond } from 'lucide-react';
 import ProductViewer3D from '@/components/3d/ProductViewer3D';
 import api from '@/utils/api';
 
-/* ── palette ── */
+/* ── Luxury palette ── */
 const C = {
-  bg:        '#ffffff',
-  bgSoft:    '#f7f7f7',
-  bgCard:    '#fafafa',
-  border:    'rgba(0,0,0,0.09)',
-  borderMed: 'rgba(0,0,0,0.18)',
-  ink:       '#0a0a0a',
-  inkMid:    'rgba(0,0,0,0.45)',
-  inkFaint:  'rgba(0,0,0,0.25)',
-  inkGhost:  'rgba(0,0,0,0.12)',
+  /* backgrounds */
+  bg:        '#0a0908',          /* near black warm */
+  bgSoft:    '#111009',          /* slightly lighter warm black */
+  bgCard:    '#16140f',          /* card surface */
+  bgGlass:   'rgba(10,9,8,0.85)',
+  /* borders */
+  borderGold:  'rgba(201,169,110,0.3)',
+  borderGoldHover: 'rgba(201,169,110,0.65)',
+  borderFaint: 'rgba(255,255,255,0.07)',
+  /* text */
+  ink:       '#faf8f4',          /* near white warm */
+  inkMid:    'rgba(250,248,244,0.60)',
+  inkFaint:  'rgba(250,248,244,0.35)',
+  inkGhost:  'rgba(250,248,244,0.12)',
+  /* gold */
+  gold:      '#c9a96e',
+  goldLight: '#e2c98a',
+  goldDark:  '#8a6e45',
+  /* accent ivory */
+  ivory:     '#f5f0e8',
 };
+
+/* ── Gold text gradient ── */
+const goldGradient = `linear-gradient(135deg, ${C.gold} 0%, ${C.goldLight} 50%, ${C.gold} 100%)`;
 
 /* ─── Store locations ─── */
 const STORES = [
@@ -56,19 +70,23 @@ const STORES = [
 
 /* ─── Marquee ─── */
 const TICKER_ITEMS = [
-  'SHOWROOM', '—', '3 BOUTIQUES', '—', 'TUNISIE', '—',
-  'COLLECTION EXCLUSIVE', '—', '6IX BY AAM', '—', 'VISITE EN BOUTIQUE', '—',
+  'SHOWROOM', '✦', 'COLLECTION EXCLUSIVE', '✦', '6IX BY AAM', '✦',
+  '3 BOUTIQUES', '✦', 'TUNISIE', '✦', 'HAUTE COUTURE STREET', '✦',
 ];
 const Marquee = () => (
-  <div className="overflow-hidden py-3" style={{ background: C.bgSoft, borderTop: `1px solid ${C.border}`, borderBottom: `1px solid ${C.border}` }}>
+  <div className="overflow-hidden py-3" style={{
+    background: C.bgSoft,
+    borderTop: `1px solid ${C.borderGold}`,
+    borderBottom: `1px solid ${C.borderGold}`,
+  }}>
     <motion.div
-      className="flex gap-10 whitespace-nowrap"
+      className="flex gap-12 whitespace-nowrap"
       animate={{ x: ['0%', '-50%'] }}
-      transition={{ duration: 22, ease: 'linear', repeat: Infinity }}
+      transition={{ duration: 28, ease: 'linear', repeat: Infinity }}
     >
       {[...TICKER_ITEMS, ...TICKER_ITEMS].map((t, i) => (
-        <span key={i} className="font-mono text-[10px] tracking-[0.4em] uppercase"
-          style={{ color: t === '—' ? C.inkGhost : C.inkFaint }}>
+        <span key={i} className="font-mono text-[10px] tracking-[0.45em] uppercase"
+          style={{ color: t === '✦' ? C.gold : C.inkFaint }}>
           {t}
         </span>
       ))}
@@ -82,28 +100,40 @@ const StoreCard = ({ store, index }) => (
     initial={{ opacity: 0, y: 30 }}
     whileInView={{ opacity: 1, y: 0 }}
     viewport={{ once: true }}
-    transition={{ delay: index * 0.1, duration: 0.5 }}
-    className="relative flex flex-col"
-    style={{ border: `1px solid ${C.border}`, background: C.bg }}
+    transition={{ delay: index * 0.12, duration: 0.6 }}
+    className="relative flex flex-col group"
+    style={{
+      border: `1px solid ${C.borderGold}`,
+      background: C.bgCard,
+      transition: 'border-color 0.3s',
+    }}
+    onMouseEnter={e => e.currentTarget.style.borderColor = C.borderGoldHover}
+    onMouseLeave={e => e.currentTarget.style.borderColor = C.borderGold}
   >
     {store.tag && (
-      <div className="absolute top-4 right-4 px-2 py-1" style={{ background: C.ink }}>
-        <span className="font-mono text-[8px] tracking-widest font-black text-white">{store.tag}</span>
+      <div className="absolute top-4 right-4 px-2 py-1 z-10"
+        style={{ background: C.gold }}>
+        <span className="font-mono text-[8px] tracking-widest font-black text-black">{store.tag}</span>
       </div>
     )}
 
     {/* Map visual */}
-    <div className="h-36 relative overflow-hidden flex items-center justify-center"
-      style={{ background: C.bgSoft, borderBottom: `1px solid ${C.border}` }}>
+    <div className="h-40 relative overflow-hidden flex items-center justify-center"
+      style={{ background: C.bgSoft, borderBottom: `1px solid ${C.borderGold}` }}>
+      {/* Gold grid */}
       <div className="absolute inset-0 pointer-events-none" style={{
-        backgroundImage: `linear-gradient(${C.border} 1px, transparent 1px), linear-gradient(90deg, ${C.border} 1px, transparent 1px)`,
-        backgroundSize: '30px 30px',
+        backgroundImage: `linear-gradient(${C.borderGold} 1px, transparent 1px), linear-gradient(90deg, ${C.borderGold} 1px, transparent 1px)`,
+        backgroundSize: '32px 32px',
       }} />
+      {/* Radial glow */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: `radial-gradient(circle at center, rgba(201,169,110,0.08) 0%, transparent 70%)` }} />
       <div className="relative z-10 flex flex-col items-center gap-2">
-        <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: C.ink }}>
-          <MapPin size={18} color="#fff" />
+        <div className="w-12 h-12 rounded-full flex items-center justify-center"
+          style={{ background: goldGradient, boxShadow: '0 0 24px rgba(201,169,110,0.4)' }}>
+          <MapPin size={18} color={C.bg} />
         </div>
-        <span className="font-mono text-[10px] tracking-widest uppercase" style={{ color: C.inkFaint }}>{store.city}</span>
+        <span className="font-mono text-[10px] tracking-widest uppercase" style={{ color: C.gold }}>{store.city}</span>
       </div>
     </div>
 
@@ -111,24 +141,24 @@ const StoreCard = ({ store, index }) => (
       <h3 className="font-mono font-black text-sm tracking-wide mb-4" style={{ color: C.ink }}>{store.name}</h3>
       <div className="space-y-3 flex-1">
         <div className="flex items-start gap-3">
-          <MapPin size={12} style={{ color: C.inkFaint, marginTop: 2, flexShrink: 0 }} />
+          <MapPin size={12} style={{ color: C.goldDark, marginTop: 2, flexShrink: 0 }} />
           <span className="font-mono text-xs leading-relaxed" style={{ color: C.inkMid }}>{store.address}</span>
         </div>
         <div className="flex items-center gap-3">
-          <Clock size={12} style={{ color: C.inkFaint, flexShrink: 0 }} />
+          <Clock size={12} style={{ color: C.goldDark, flexShrink: 0 }} />
           <span className="font-mono text-xs" style={{ color: C.inkMid }}>{store.hours}</span>
         </div>
         <div className="flex items-center gap-3">
-          <Phone size={12} style={{ color: C.inkFaint, flexShrink: 0 }} />
+          <Phone size={12} style={{ color: C.goldDark, flexShrink: 0 }} />
           <span className="font-mono text-xs" style={{ color: C.inkMid }}>{store.phone}</span>
         </div>
       </div>
       <div className="flex gap-2 mt-6">
         <a href={store.mapUrl} target="_blank" rel="noopener noreferrer"
           className="flex-1 py-2.5 flex items-center justify-center gap-2 font-mono text-[10px] tracking-widest uppercase transition-all"
-          style={{ background: C.ink, color: '#fff' }}
-          onMouseEnter={e => e.currentTarget.style.background = '#333'}
-          onMouseLeave={e => e.currentTarget.style.background = C.ink}>
+          style={{ background: C.bgSoft, color: C.inkMid, border: `1px solid ${C.borderGold}` }}
+          onMouseEnter={e => { e.currentTarget.style.color = C.gold; e.currentTarget.style.borderColor = C.gold; }}
+          onMouseLeave={e => { e.currentTarget.style.color = C.inkMid; e.currentTarget.style.borderColor = C.borderGold; }}>
           <Navigation size={11} /> Itinéraire
         </a>
         <a href={`https://wa.me/${store.whatsapp}?text=${encodeURIComponent(`Bonjour, je voudrais visiter votre boutique à ${store.city}.`)}`}
@@ -147,32 +177,36 @@ const StoreCard = ({ store, index }) => (
 /* ─── Product thumbnail card ─── */
 const ProductCard = ({ product, onSelect, isSelected }) => (
   <motion.div
-    whileHover={{ y: -4 }}
+    whileHover={{ y: -3, scale: 1.02 }}
     onClick={() => onSelect(product)}
-    className="cursor-pointer group"
+    className="cursor-pointer group relative"
     style={{
-      border: `1px solid ${isSelected ? C.ink : C.border}`,
-      background: isSelected ? C.bgSoft : C.bg,
-      transition: 'border-color 0.2s, background 0.2s',
+      border: isSelected ? `1px solid ${C.gold}` : `1px solid ${C.borderFaint}`,
+      background: isSelected ? C.bgCard : C.bgSoft,
+      transition: 'all 0.25s',
+      boxShadow: isSelected ? `0 0 16px rgba(201,169,110,0.25)` : 'none',
     }}
   >
-    <div className="aspect-square overflow-hidden" style={{ background: C.bgSoft }}>
+    <div className="aspect-square overflow-hidden" style={{ background: C.bgCard }}>
       {product.images?.[0] ? (
         <img src={product.images[0]} alt={product.name}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" loading="lazy" />
       ) : (
         <div className="w-full h-full flex items-center justify-center">
-          <span className="font-mono font-black text-3xl select-none"
-            style={{ color: isSelected ? 'rgba(0,0,0,0.3)' : C.inkGhost }}>
+          <span className="font-mono font-black text-2xl select-none"
+            style={{ background: isSelected ? goldGradient : 'none', WebkitBackgroundClip: isSelected ? 'text' : 'initial', WebkitTextFillColor: isSelected ? 'transparent' : C.inkGhost }}>
             6IX
           </span>
         </div>
       )}
     </div>
-    <div className="p-3">
-      <p className="font-mono font-bold text-xs truncate" style={{ color: C.ink }}>{product.name}</p>
-      <p className="font-mono text-xs mt-1" style={{ color: C.inkFaint }}>{product.price} TND</p>
+    <div className="p-2.5">
+      <p className="font-mono font-bold text-[10px] truncate" style={{ color: C.ink }}>{product.name}</p>
+      <p className="font-mono text-[10px] mt-0.5" style={{ color: C.gold }}>{product.price} TND</p>
     </div>
+    {isSelected && (
+      <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: goldGradient }} />
+    )}
   </motion.div>
 );
 
@@ -190,6 +224,15 @@ const openWhatsApp = (productName) => {
   window.open(`https://wa.me/21600000000?text=${msg}`, '_blank');
 };
 
+/* ─── Gold divider ─── */
+const GoldDivider = () => (
+  <div className="flex items-center gap-4 my-8">
+    <div className="flex-1 h-px" style={{ background: `linear-gradient(to right, transparent, ${C.borderGold})` }} />
+    <span style={{ color: C.gold, fontSize: 10 }}>✦</span>
+    <div className="flex-1 h-px" style={{ background: `linear-gradient(to left, transparent, ${C.borderGold})` }} />
+  </div>
+);
+
 /* ─── Main page ─── */
 const ShopPage = () => {
   const [products, setProducts] = useState([]);
@@ -200,6 +243,10 @@ const ShopPage = () => {
   const storesRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
   const storesInView = useInView(storesRef, { once: true, margin: '-80px' });
+
+  /* parallax */
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '30%']);
 
   useEffect(() => {
     api.get('/products').then(r => {
@@ -223,11 +270,14 @@ const ShopPage = () => {
 
       {/* ── Sticky nav ── */}
       <div className="sticky top-0 z-40"
-        style={{ background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(20px)', borderBottom: `1px solid ${C.border}` }}>
+        style={{ background: C.bgGlass, backdropFilter: 'blur(24px)', borderBottom: `1px solid ${C.borderGold}` }}>
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="font-mono font-black text-xl tracking-widest" style={{ color: C.ink }}>6IX</span>
-            <span className="hidden sm:block w-px h-4" style={{ background: C.border }} />
+            <span className="font-mono font-black text-xl tracking-widest"
+              style={{ background: goldGradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              6IX
+            </span>
+            <span className="hidden sm:block w-px h-4" style={{ background: C.borderGold }} />
             <span className="hidden sm:block font-mono text-[9px] tracking-[0.4em] uppercase" style={{ color: C.inkFaint }}>
               {STORES.length} Boutiques en Tunisie
             </span>
@@ -239,8 +289,8 @@ const ShopPage = () => {
               <button key={cat} onClick={() => setCategory(cat)}
                 className="font-mono text-[10px] tracking-[0.3em] uppercase px-4 py-1.5 transition-all duration-200"
                 style={{
-                  color: category === cat ? C.ink : C.inkFaint,
-                  borderBottom: category === cat ? `1px solid ${C.ink}` : '1px solid transparent',
+                  color: category === cat ? C.gold : C.inkFaint,
+                  borderBottom: category === cat ? `1px solid ${C.gold}` : '1px solid transparent',
                 }}>
                 {cat}
               </button>
@@ -251,9 +301,9 @@ const ShopPage = () => {
             onClick={() => storesRef.current?.scrollIntoView({ behavior: 'smooth' })}
             whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
             className="flex items-center gap-2 px-4 py-2 font-mono text-[10px] tracking-widest uppercase transition-all"
-            style={{ border: `1px solid ${C.borderMed}`, color: C.inkMid }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = C.ink; e.currentTarget.style.color = C.ink; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = C.borderMed; e.currentTarget.style.color = C.inkMid; }}
+            style={{ border: `1px solid ${C.borderGold}`, color: C.inkFaint }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = C.borderGold; e.currentTarget.style.color = C.inkFaint; }}
           >
             <Store size={12} /> Nos Boutiques
           </motion.button>
@@ -264,77 +314,117 @@ const ShopPage = () => {
       <Marquee />
 
       {/* ── Hero ── */}
-      <div ref={heroRef} className="relative overflow-hidden"
-        style={{ background: C.bg, borderBottom: `1px solid ${C.border}` }}>
-        {/* subtle dot grid */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: `radial-gradient(${C.inkGhost} 1px, transparent 1px)`,
-          backgroundSize: '28px 28px',
-        }} />
-        <div className="max-w-7xl mx-auto px-6 py-20 relative z-10">
-          <div className="flex flex-col lg:flex-row lg:items-end gap-10">
-            <div className="flex-1">
-              <motion.div
-                initial={{ opacity: 0, y: 8 }} animate={heroInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.5 }}
-                className="inline-flex items-center gap-2 mb-5 px-3 py-1"
-                style={{ border: `1px solid ${C.border}` }}
-              >
-                <Zap size={9} style={{ color: C.inkFaint }} />
-                <span className="font-mono text-[9px] tracking-[0.5em] uppercase" style={{ color: C.inkFaint }}>
-                  Catalogue — {STORES.length} Boutiques
-                </span>
-              </motion.div>
+      <div ref={heroRef} className="relative overflow-hidden" style={{ minHeight: '80vh' }}>
+        {/* Dramatic background layers */}
+        <motion.div style={{ y: heroY }} className="absolute inset-0">
+          {/* Deep diagonal grain texture */}
+          <div className="absolute inset-0" style={{
+            backgroundImage: `repeating-linear-gradient(
+              -45deg,
+              transparent,
+              transparent 2px,
+              rgba(201,169,110,0.015) 2px,
+              rgba(201,169,110,0.015) 4px
+            )`,
+          }} />
+          {/* Central radial glow */}
+          <div className="absolute inset-0" style={{
+            background: `radial-gradient(ellipse 80% 60% at 50% 100%, rgba(201,169,110,0.07) 0%, transparent 70%)`,
+          }} />
+          {/* Top vignette */}
+          <div className="absolute inset-0" style={{
+            background: `linear-gradient(to bottom, ${C.bg} 0%, transparent 30%, transparent 70%, ${C.bg} 100%)`,
+          }} />
+        </motion.div>
 
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }} animate={heroInView ? { opacity: 1, y: 0 } : {}}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="font-mono font-black tracking-tighter leading-none"
-                style={{ fontSize: 'clamp(5rem, 14vw, 11rem)', color: C.ink }}
-              >
-                6IX
-              </motion.h1>
+        {/* Decorative vertical gold lines */}
+        <div className="absolute left-[8%] top-0 bottom-0 w-px pointer-events-none" style={{ background: `linear-gradient(to bottom, transparent, ${C.borderGold} 30%, ${C.borderGold} 70%, transparent)` }} />
+        <div className="absolute right-[8%] top-0 bottom-0 w-px pointer-events-none" style={{ background: `linear-gradient(to bottom, transparent, ${C.borderGold} 30%, ${C.borderGold} 70%, transparent)` }} />
 
-              <motion.p
-                initial={{ opacity: 0 }} animate={heroInView ? { opacity: 1 } : {}}
-                transition={{ delay: 0.4 }}
-                className="font-mono text-xs tracking-[0.4em] uppercase mt-4"
-                style={{ color: C.inkFaint }}
-              >
-                Découvrez la collection — Achetez en boutique
-              </motion.p>
+        <div className="max-w-7xl mx-auto px-6 py-28 relative z-10">
+          {/* Label */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} animate={heroInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ duration: 0.7 }}
+            className="flex items-center justify-center gap-3 mb-10"
+          >
+            <div className="h-px w-16" style={{ background: goldGradient }} />
+            <div className="flex items-center gap-2 px-4 py-1.5"
+              style={{ border: `1px solid ${C.borderGold}`, background: 'rgba(201,169,110,0.06)' }}>
+              <Diamond size={8} style={{ color: C.gold }} />
+              <span className="font-mono text-[9px] tracking-[0.55em] uppercase" style={{ color: C.gold }}>
+                Catalogue Exclusif — {STORES.length} Boutiques
+              </span>
+              <Diamond size={8} style={{ color: C.gold }} />
             </div>
+            <div className="h-px w-16" style={{ background: goldGradient }} />
+          </motion.div>
 
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }} animate={heroInView ? { opacity: 1, x: 0 } : {}}
-              transition={{ delay: 0.35, duration: 0.6 }}
-              className="flex items-center gap-8"
+          {/* Giant 6IX */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }} animate={heroInView ? { opacity: 1, scale: 1 } : {}}
+            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-center mb-6"
+          >
+            <h1
+              className="font-mono font-black tracking-tighter leading-none select-none"
+              style={{
+                fontSize: 'clamp(7rem, 22vw, 18rem)',
+                background: goldGradient,
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                filter: 'drop-shadow(0 0 60px rgba(201,169,110,0.25))',
+              }}
             >
-              {[
-                { value: STORES.length, label: 'Boutiques' },
-                { value: products.length || '3+', label: 'Pièces' },
-                { value: 'TN', label: 'Origine' },
-              ].map(({ value, label }, i) => (
-                <div key={i} className="text-center">
-                  <p className="font-mono font-black text-3xl" style={{ color: C.ink }}>{value}</p>
-                  <p className="font-mono text-[9px] tracking-widest uppercase mt-1" style={{ color: C.inkFaint }}>{label}</p>
-                </div>
-              ))}
-            </motion.div>
-          </div>
+              6IX
+            </h1>
+          </motion.div>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0 }} animate={heroInView ? { opacity: 1 } : {}}
+            transition={{ delay: 0.5 }}
+            className="font-mono text-center text-xs tracking-[0.55em] uppercase mb-16"
+            style={{ color: C.inkFaint }}
+          >
+            Découvrez la collection — Achetez en boutique
+          </motion.p>
+
+          {/* Stats row */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} animate={heroInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.45, duration: 0.7 }}
+            className="flex items-stretch justify-center divide-x"
+            style={{ borderTop: `1px solid ${C.borderGold}`, borderBottom: `1px solid ${C.borderGold}`, divideColor: C.borderGold }}
+          >
+            {[
+              { value: STORES.length, label: 'Boutiques' },
+              { value: products.length || '3+', label: 'Pièces exclusives' },
+              { value: 'TN', label: 'Origine Tunisie' },
+              { value: '✦', label: 'Édition limitée' },
+            ].map(({ value, label }, i) => (
+              <div key={i} className="flex-1 text-center py-5 px-4"
+                style={{ borderRight: i < 3 ? `1px solid ${C.borderGold}` : 'none' }}>
+                <p className="font-mono font-black text-2xl mb-1"
+                  style={{ background: goldGradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  {value}
+                </p>
+                <p className="font-mono text-[8px] tracking-widest uppercase" style={{ color: C.inkFaint }}>{label}</p>
+              </div>
+            ))}
+          </motion.div>
         </div>
       </div>
 
       {/* ── Mobile category tabs ── */}
       <div className="md:hidden flex items-center overflow-x-auto px-4"
-        style={{ background: C.bgSoft, borderBottom: `1px solid ${C.border}` }}>
+        style={{ background: C.bgSoft, borderBottom: `1px solid ${C.borderGold}` }}>
         {ALL_CATEGORIES.map(cat => (
           <button key={cat} onClick={() => setCategory(cat)}
             className="font-mono text-[10px] tracking-widest uppercase px-4 py-3 whitespace-nowrap shrink-0 transition-all"
             style={{
-              color: category === cat ? C.ink : C.inkFaint,
-              borderBottom: category === cat ? `1px solid ${C.ink}` : '1px solid transparent',
+              color: category === cat ? C.gold : C.inkFaint,
+              borderBottom: category === cat ? `1px solid ${C.gold}` : '1px solid transparent',
             }}>
             {cat}
           </button>
@@ -342,202 +432,262 @@ const ShopPage = () => {
       </div>
 
       {/* ── Catalogue section ── */}
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 items-start">
+      <div style={{ background: C.bg, borderTop: `1px solid ${C.borderFaint}` }}>
+        <div className="max-w-7xl mx-auto px-6 py-16">
+          {/* Section header */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} transition={{ duration: 0.6 }}
+            className="text-center mb-14"
+          >
+            <span className="font-mono text-[9px] tracking-[0.55em] uppercase" style={{ color: C.gold }}>
+              ✦ Collection
+            </span>
+            <h2 className="font-mono font-black text-3xl md:text-4xl tracking-tight mt-2" style={{ color: C.ink }}>
+              {category === 'Tout' ? 'LA COLLECTION' : category.toUpperCase()}
+            </h2>
+            <p className="font-mono text-xs tracking-widest mt-2" style={{ color: C.inkFaint }}>
+              {filteredProducts.length} pièce{filteredProducts.length !== 1 ? 's' : ''} exclusive{filteredProducts.length !== 1 ? 's' : ''}
+            </p>
+          </motion.div>
 
-          {/* Left: Viewer + thumbnails */}
-          <div className="lg:sticky lg:top-20">
-            <div className="relative">
-              <Suspense fallback={
-                <div className="aspect-square flex items-center justify-center"
-                  style={{ background: C.bgSoft, border: `1px solid ${C.border}` }}>
-                  <span className="font-mono text-xs tracking-widest uppercase" style={{ color: C.inkFaint }}>Chargement…</span>
-                </div>
-              }>
-                {selectedProduct && <ProductViewer3D product={selectedProduct} />}
-              </Suspense>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-20 items-start">
 
-              {selectedProduct?.tag && (
-                <div className="absolute top-4 left-4 px-2.5 py-1" style={{ background: C.ink }}>
-                  <span className="font-mono text-[9px] tracking-widest font-black text-white uppercase">
-                    {selectedProduct.tag}
-                  </span>
-                </div>
-              )}
-              <div className="absolute top-4 right-4 px-2.5 py-1"
-                style={{ background: 'rgba(255,255,255,0.9)', border: `1px solid ${C.border}` }}>
-                <span className="font-mono text-[9px] tracking-widest uppercase" style={{ color: C.inkMid }}>En boutique</span>
-              </div>
-            </div>
+            {/* Left: Viewer + thumbnails */}
+            <div className="lg:sticky lg:top-20">
+              <div className="relative group">
+                {/* Gold corner decorations */}
+                <div className="absolute top-0 left-0 w-8 h-8 pointer-events-none z-20"
+                  style={{ borderTop: `2px solid ${C.gold}`, borderLeft: `2px solid ${C.gold}` }} />
+                <div className="absolute top-0 right-0 w-8 h-8 pointer-events-none z-20"
+                  style={{ borderTop: `2px solid ${C.gold}`, borderRight: `2px solid ${C.gold}` }} />
+                <div className="absolute bottom-0 left-0 w-8 h-8 pointer-events-none z-20"
+                  style={{ borderBottom: `2px solid ${C.gold}`, borderLeft: `2px solid ${C.gold}` }} />
+                <div className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none z-20"
+                  style={{ borderBottom: `2px solid ${C.gold}`, borderRight: `2px solid ${C.gold}` }} />
 
-            <div className="mt-4">
-              <p className="font-mono text-[9px] tracking-[0.4em] uppercase mb-3" style={{ color: C.inkFaint }}>
-                {category === 'Tout' ? 'Collection' : category} · {filteredProducts.length} pièces
-              </p>
-              <div className="grid grid-cols-4 gap-2">
-                {filteredProducts.map(p => (
-                  <ProductCard key={p._id} product={p}
-                    onSelect={setSelectedProduct}
-                    isSelected={selectedProduct?._id === p._id} />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Product detail */}
-          <div>
-            {selectedProduct && (
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={selectedProduct._id}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.35 }}
-                >
-                  <div className="font-mono text-[9px] tracking-[0.5em] uppercase mb-3" style={{ color: C.inkFaint }}>
-                    {selectedProduct.category}
-                  </div>
-                  <h2 className="font-mono font-black tracking-tight leading-tight mb-4"
-                    style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', color: C.ink }}>
-                    {selectedProduct.name.toUpperCase()}
-                  </h2>
-                  <p className="font-mono text-sm leading-relaxed mb-8" style={{ color: C.inkMid }}>
-                    {selectedProduct.description}
-                  </p>
-
-                  {/* Price */}
-                  <div className="flex items-baseline gap-4 mb-6">
-                    <span className="font-mono font-black text-4xl" style={{ color: C.ink }}>{selectedProduct.price}</span>
-                    <span className="font-mono text-sm" style={{ color: C.inkFaint }}>TND</span>
-                  </div>
-
-                  {/* Colors */}
-                  {selectedProduct.colors?.length > 0 && (
-                    <div className="mb-8">
-                      <p className="font-mono text-[9px] tracking-[0.4em] uppercase mb-2" style={{ color: C.inkFaint }}>
-                        Coloris disponibles
-                      </p>
-                      <p className="font-mono text-xs" style={{ color: C.inkMid }}>
-                        {selectedProduct.colors.join(' · ')}
-                      </p>
+                <div style={{ border: `1px solid ${C.borderGold}`, background: C.bgCard }}>
+                  <Suspense fallback={
+                    <div className="aspect-square flex items-center justify-center"
+                      style={{ background: C.bgCard }}>
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-10 h-10 rounded-full border border-t-transparent animate-spin"
+                          style={{ borderColor: C.gold, borderTopColor: 'transparent' }} />
+                        <span className="font-mono text-[10px] tracking-widest uppercase" style={{ color: C.goldDark }}>Chargement…</span>
+                      </div>
                     </div>
-                  )}
+                  }>
+                    {selectedProduct && <ProductViewer3D product={selectedProduct} />}
+                  </Suspense>
+                </div>
 
-                  {/* Available stores */}
-                  <div className="mb-8 p-4" style={{ background: C.bgSoft, border: `1px solid ${C.border}` }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <Store size={12} style={{ color: C.inkFaint }} />
-                      <span className="font-mono text-[9px] tracking-[0.4em] uppercase" style={{ color: C.inkFaint }}>
-                        Disponible dans {STORES.length} boutiques
+                {selectedProduct?.tag && (
+                  <div className="absolute top-4 left-4 px-3 py-1 z-20"
+                    style={{ background: goldGradient }}>
+                    <span className="font-mono text-[9px] tracking-widest font-black text-black uppercase">
+                      {selectedProduct.tag}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute top-4 right-4 px-2.5 py-1 z-20"
+                  style={{ background: 'rgba(10,9,8,0.8)', border: `1px solid ${C.borderGold}`, backdropFilter: 'blur(8px)' }}>
+                  <span className="font-mono text-[9px] tracking-widest uppercase" style={{ color: C.gold }}>En boutique</span>
+                </div>
+              </div>
+
+              {/* Thumbnails */}
+              <div className="mt-5">
+                <p className="font-mono text-[9px] tracking-[0.45em] uppercase mb-3 text-center"
+                  style={{ color: C.inkFaint }}>
+                  {filteredProducts.length} pièces — Sélectionnez
+                </p>
+                <div className="grid grid-cols-4 gap-2">
+                  {filteredProducts.map(p => (
+                    <ProductCard key={p._id} product={p}
+                      onSelect={setSelectedProduct}
+                      isSelected={selectedProduct?._id === p._id} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right: Product detail */}
+            <div>
+              {selectedProduct && (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={selectedProduct._id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -12 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    {/* Category label */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="h-px w-8" style={{ background: goldGradient }} />
+                      <span className="font-mono text-[9px] tracking-[0.55em] uppercase" style={{ color: C.gold }}>
+                        {selectedProduct.category}
                       </span>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      {STORES.map(s => (
-                        <span key={s.id} className="font-mono text-[10px] px-2 py-1"
-                          style={{ border: `1px solid ${C.borderMed}`, color: C.inkMid }}>
-                          {s.city}
-                        </span>
-                      ))}
+
+                    <h2 className="font-mono font-black tracking-tight leading-none mb-5"
+                      style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', color: C.ink }}>
+                      {selectedProduct.name.toUpperCase()}
+                    </h2>
+
+                    <p className="font-mono text-sm leading-relaxed mb-8" style={{ color: C.inkMid }}>
+                      {selectedProduct.description}
+                    </p>
+
+                    {/* Price */}
+                    <div className="flex items-baseline gap-3 mb-6 p-4"
+                      style={{ border: `1px solid ${C.borderGold}`, background: 'rgba(201,169,110,0.04)' }}>
+                      <span className="font-mono font-black text-4xl"
+                        style={{ background: goldGradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        {selectedProduct.price}
+                      </span>
+                      <span className="font-mono text-sm" style={{ color: C.inkFaint }}>TND</span>
+                      <span className="ml-auto font-mono text-[9px] tracking-widest uppercase flex items-center gap-1.5"
+                        style={{ color: C.gold }}>
+                        <Sparkles size={10} /> Exclusif
+                      </span>
                     </div>
-                  </div>
 
-                  <div className="h-px mb-8" style={{ background: C.border }} />
+                    {/* Colors */}
+                    {selectedProduct.colors?.length > 0 && (
+                      <div className="mb-8">
+                        <p className="font-mono text-[9px] tracking-[0.4em] uppercase mb-3" style={{ color: C.gold }}>
+                          Coloris disponibles
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedProduct.colors.map(col => (
+                            <span key={col} className="font-mono text-[10px] px-3 py-1.5"
+                              style={{ border: `1px solid ${C.borderGold}`, color: C.inkMid }}>
+                              {col}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                  {/* CTAs */}
-                  <div className="flex flex-col gap-3">
-                    <motion.button
-                      onClick={() => openWhatsApp(selectedProduct.name)}
-                      whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-                      className="w-full py-4 font-mono text-xs tracking-[0.3em] uppercase flex items-center justify-center gap-3"
-                      style={{ background: '#25D366', color: '#fff' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#1ebe5d'}
-                      onMouseLeave={e => e.currentTarget.style.background = '#25D366'}
-                    >
-                      <MessageCircle size={14} /> Demander via WhatsApp
-                    </motion.button>
-
-                    <motion.button
-                      onClick={() => storesRef.current?.scrollIntoView({ behavior: 'smooth' })}
-                      whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}
-                      className="w-full py-4 font-mono text-xs tracking-[0.3em] uppercase flex items-center justify-center gap-3 transition-colors"
-                      style={{ background: C.ink, color: '#fff' }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#222'}
-                      onMouseLeave={e => e.currentTarget.style.background = C.ink}
-                    >
-                      <MapPin size={14} /> Trouver une Boutique
-                    </motion.button>
-
-                    <a href="tel:+21600000000"
-                      className="w-full py-3 font-mono text-[10px] tracking-widest uppercase text-center flex items-center justify-center gap-2 transition-all"
-                      style={{ border: `1px solid ${C.borderMed}`, color: C.inkMid }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor = C.ink; e.currentTarget.style.color = C.ink; }}
-                      onMouseLeave={e => { e.currentTarget.style.borderColor = C.borderMed; e.currentTarget.style.color = C.inkMid; }}
-                    >
-                      <Phone size={11} /> Appeler la boutique
-                    </a>
-                  </div>
-
-                  {/* Info rows */}
-                  <div className="mt-10">
-                    {[
-                      { label: 'Essayage', value: 'En boutique' },
-                      { label: 'Sur mesure', value: 'Disponible' },
-                      { label: 'Paiement', value: 'Cash · Carte · Virement' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="flex items-center justify-between py-4"
-                        style={{ borderBottom: `1px solid ${C.border}` }}>
-                        <span className="font-mono text-[10px] tracking-widest uppercase" style={{ color: C.inkFaint }}>
-                          {label}
-                        </span>
-                        <span className="font-mono text-[10px] flex items-center gap-1" style={{ color: C.inkMid }}>
-                          {value} <ChevronRight size={10} style={{ color: C.inkGhost }} />
+                    {/* Available stores */}
+                    <div className="mb-8 p-4" style={{ background: C.bgCard, border: `1px solid ${C.borderGold}` }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Store size={12} style={{ color: C.gold }} />
+                        <span className="font-mono text-[9px] tracking-[0.4em] uppercase" style={{ color: C.gold }}>
+                          Disponible dans {STORES.length} boutiques
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            )}
+                      <div className="flex flex-wrap gap-2">
+                        {STORES.map(s => (
+                          <span key={s.id} className="font-mono text-[10px] px-2 py-1"
+                            style={{ border: `1px solid ${C.borderGold}`, color: C.inkMid }}>
+                            {s.city}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <GoldDivider />
+
+                    {/* CTAs */}
+                    <div className="flex flex-col gap-3">
+                      <motion.button
+                        onClick={() => openWhatsApp(selectedProduct.name)}
+                        whileHover={{ scale: 1.01, boxShadow: '0 0 30px rgba(37,211,102,0.3)' }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full py-4 font-mono text-xs tracking-[0.3em] uppercase flex items-center justify-center gap-3"
+                        style={{ background: '#25D366', color: '#fff' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#1ebe5d'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#25D366'}
+                      >
+                        <MessageCircle size={14} /> Demander via WhatsApp
+                      </motion.button>
+
+                      <motion.button
+                        onClick={() => storesRef.current?.scrollIntoView({ behavior: 'smooth' })}
+                        whileHover={{ scale: 1.01, boxShadow: `0 0 30px rgba(201,169,110,0.25)` }}
+                        whileTap={{ scale: 0.98 }}
+                        className="w-full py-4 font-mono text-xs tracking-[0.3em] uppercase flex items-center justify-center gap-3"
+                        style={{ background: goldGradient, color: C.bg }}
+                      >
+                        <MapPin size={14} /> Trouver une Boutique
+                      </motion.button>
+
+                      <a href="tel:+21600000000"
+                        className="w-full py-3 font-mono text-[10px] tracking-widest uppercase text-center flex items-center justify-center gap-2 transition-all"
+                        style={{ border: `1px solid ${C.borderGold}`, color: C.inkFaint }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = C.borderGold; e.currentTarget.style.color = C.inkFaint; }}
+                      >
+                        <Phone size={11} /> Appeler la boutique
+                      </a>
+                    </div>
+
+                    {/* Info rows */}
+                    <div className="mt-10">
+                      {[
+                        { label: 'Essayage', value: 'En boutique' },
+                        { label: 'Sur mesure', value: 'Disponible' },
+                        { label: 'Paiement', value: 'Cash · Carte · Virement' },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex items-center justify-between py-4"
+                          style={{ borderBottom: `1px solid ${C.borderFaint}` }}>
+                          <span className="font-mono text-[10px] tracking-widest uppercase" style={{ color: C.inkFaint }}>
+                            {label}
+                          </span>
+                          <span className="font-mono text-[10px] flex items-center gap-1" style={{ color: C.inkMid }}>
+                            {value} <ChevronRight size={10} style={{ color: C.goldDark }} />
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                </AnimatePresence>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* ── Stores section ── */}
-      <div ref={storesRef} style={{ background: C.bgSoft, borderTop: `1px solid ${C.border}` }}>
+      <div ref={storesRef} style={{ background: C.bgSoft, borderTop: `1px solid ${C.borderGold}` }}>
         <div className="max-w-7xl mx-auto px-6 py-20">
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={storesInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6 }}
-            className="mb-14"
+            className="mb-14 text-center"
           >
-            <div className="inline-flex items-center gap-2 mb-4 px-3 py-1"
-              style={{ border: `1px solid ${C.border}` }}>
-              <Store size={9} style={{ color: C.inkFaint }} />
-              <span className="font-mono text-[9px] tracking-[0.5em] uppercase" style={{ color: C.inkFaint }}>
-                Nos Boutiques
-              </span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-              <div>
-                <h2 className="font-mono font-black text-4xl md:text-5xl tracking-tight" style={{ color: C.ink }}>
-                  {STORES.length} ADRESSES
-                </h2>
-                <p className="font-mono text-xs mt-3 tracking-[0.3em] uppercase" style={{ color: C.inkFaint }}>
-                  Partout en Tunisie — Venez nous rendre visite
-                </p>
+            {/* Decorative header */}
+            <div className="flex items-center justify-center gap-4 mb-5">
+              <div className="h-px w-12" style={{ background: goldGradient }} />
+              <div className="inline-flex items-center gap-2 px-4 py-1.5"
+                style={{ border: `1px solid ${C.borderGold}`, background: 'rgba(201,169,110,0.06)' }}>
+                <Store size={9} style={{ color: C.gold }} />
+                <span className="font-mono text-[9px] tracking-[0.5em] uppercase" style={{ color: C.gold }}>
+                  Nos Boutiques
+                </span>
               </div>
-              <a href="https://wa.me/21600000000" target="_blank" rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-6 py-3 font-mono text-[10px] tracking-widest uppercase self-start sm:self-auto transition-all"
-                style={{ border: `1px solid ${C.borderMed}`, color: C.inkMid }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = C.ink; e.currentTarget.style.color = C.ink; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = C.borderMed; e.currentTarget.style.color = C.inkMid; }}
-              >
-                <CalendarCheck size={12} /> Prendre RDV
-              </a>
+              <div className="h-px w-12" style={{ background: goldGradient }} />
             </div>
+
+            <h2 className="font-mono font-black text-4xl md:text-5xl tracking-tight mb-3" style={{ color: C.ink }}>
+              {STORES.length} ADRESSES
+            </h2>
+            <p className="font-mono text-xs tracking-[0.3em] uppercase mb-6" style={{ color: C.inkFaint }}>
+              Partout en Tunisie — Venez nous rendre visite
+            </p>
+
+            <a href="https://wa.me/21600000000" target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 font-mono text-[10px] tracking-widest uppercase transition-all"
+              style={{ border: `1px solid ${C.borderGold}`, color: C.gold }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(201,169,110,0.1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <CalendarCheck size={12} /> Prendre Rendez-vous
+            </a>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -548,8 +698,13 @@ const ShopPage = () => {
             initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}
             viewport={{ once: true }} transition={{ delay: 0.4 }}
             className="mt-12 pt-8 text-center"
-            style={{ borderTop: `1px solid ${C.border}` }}
+            style={{ borderTop: `1px solid ${C.borderGold}` }}
           >
+            <div className="flex items-center justify-center gap-3 mb-3">
+              <span style={{ color: C.gold, fontSize: 10 }}>✦</span>
+              <span style={{ color: C.gold, fontSize: 10 }}>✦</span>
+              <span style={{ color: C.gold, fontSize: 10 }}>✦</span>
+            </div>
             <p className="font-mono text-xs" style={{ color: C.inkFaint }}>
               Chaque pièce de la collection 6IX est disponible dans toutes nos boutiques.<br />
               Contactez-nous pour vérifier la disponibilité d'un article spécifique.
@@ -559,14 +714,16 @@ const ShopPage = () => {
       </div>
 
       {/* ── Footer ── */}
-      <div style={{ background: C.bg, borderTop: `1px solid ${C.border}` }} className="py-8">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div>
-            <p className="font-mono font-black text-2xl tracking-widest" style={{ color: C.ink }}>6IX</p>
-            <p className="font-mono text-[9px] tracking-[0.4em] uppercase mt-1" style={{ color: C.inkFaint }}>
-              By Académie Arabe de la Mode — Tunisie
-            </p>
-          </div>
+      <div style={{ background: C.bg, borderTop: `1px solid ${C.borderGold}` }} className="py-10">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <p className="font-mono font-black text-3xl tracking-widest mb-1"
+            style={{ background: goldGradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            6IX
+          </p>
+          <p className="font-mono text-[9px] tracking-[0.45em] uppercase mb-4" style={{ color: C.inkFaint }}>
+            By Académie Arabe de la Mode — Tunisie
+          </p>
+          <div className="h-px max-w-xs mx-auto mb-4" style={{ background: goldGradient, opacity: 0.3 }} />
           <p className="font-mono text-[10px]" style={{ color: C.inkFaint }}>
             © 2025 6IX — Vente en boutique uniquement
           </p>
