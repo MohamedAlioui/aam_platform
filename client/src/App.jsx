@@ -84,7 +84,7 @@ const AppRoutes = () => {
           <Route path="/login"       element={<PageWrapper><Login /></PageWrapper>} />
           <Route path="/register"    element={<PageWrapper><Register /></PageWrapper>} />
           <Route path="/my-courses"      element={<PageWrapper><MyCourses /></PageWrapper>} />
-          <Route path="/testimonials"    element={<PageWrapper><Testimonials /></PageWrapper>} />
+          <Route path="/testimonials"    element={<AdminRoute><PageWrapper><Testimonials /></PageWrapper></AdminRoute>} />
           <Route path="/dashboard/*" element={
             <AdminRoute><PageWrapper><Dashboard /></PageWrapper></AdminRoute>
           } />
