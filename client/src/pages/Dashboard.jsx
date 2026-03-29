@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, Bell, Plus, Pencil, Trash2, Check, X, Star,
   Upload, Image as ImageIcon, Package, ShoppingBag, Users,
-  AlertTriangle, Eye, EyeOff, ChevronDown
+  AlertTriangle, Eye, EyeOff, ChevronDown, Play
 } from 'lucide-react';
 import Sidebar from '@/components/admin/Sidebar';
 import StatsCard from '@/components/admin/StatsCard';
@@ -618,6 +618,175 @@ const GalleryManager = () => {
 };
 
 // ═══════════════════════════════
+// REEL PREVIEW — phone mockup
+// ═══════════════════════════════
+const ReelPreview = ({ videoFile, thumbFile, form }) => {
+  const videoUrl = videoFile ? URL.createObjectURL(videoFile) : null;
+  const thumbUrl = thumbFile ? URL.createObjectURL(thumbFile) : null;
+  const [playing, setPlaying] = useState(false);
+  const vRef = useRef(null);
+
+  const toggle = () => {
+    if (!vRef.current) return;
+    if (playing) { vRef.current.pause(); setPlaying(false); }
+    else         { vRef.current.play();  setPlaying(true);  }
+  };
+
+  if (!videoUrl) return (
+    <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--text-muted)' }}>
+      <div className="w-16 h-16 rounded-full flex items-center justify-center"
+        style={{ background: 'var(--bg-section)', border: '2px dashed var(--border)' }}>
+        <Upload size={22} style={{ color: 'var(--text-muted)' }} />
+      </div>
+      <p className="font-mono text-xs text-center opacity-60">Aperçu reel</p>
+    </div>
+  );
+
+  return (
+    <div className="relative w-full h-full rounded-[28px] overflow-hidden bg-black" onClick={toggle} style={{ cursor: 'pointer' }}>
+      {/* Video or thumb */}
+      {thumbUrl && !playing && (
+        <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      )}
+      <video ref={vRef} src={videoUrl} className="absolute inset-0 w-full h-full object-cover"
+        loop playsInline style={{ display: playing ? 'block' : thumbUrl ? 'none' : 'block' }} />
+
+      {/* Dark gradient overlay */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)' }} />
+
+      {/* Play/pause */}
+      {!playing && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
+            className="w-14 h-14 rounded-full flex items-center justify-center"
+            style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', border: '2px solid rgba(255,255,255,0.4)' }}>
+            <Play size={20} fill="white" color="white" className="ml-1" />
+          </motion.div>
+        </div>
+      )}
+
+      {/* Stars top-left */}
+      <div className="absolute top-3 left-3">
+        <span className="text-sm" style={{ color: '#facc15', textShadow: '0 1px 4px rgba(0,0,0,0.6)' }}>
+          {'★'.repeat(Number(form.stars))}
+        </span>
+      </div>
+
+      {/* User info bottom */}
+      <div className="absolute bottom-4 left-4 right-10">
+        <p className="font-display text-sm font-bold text-white leading-tight drop-shadow-lg">
+          {form.name || 'Nom de l\'étudiant(e)'}
+        </p>
+        {(form.role || form.city) && (
+          <p className="font-mono text-[11px] mt-0.5 text-white/70">
+            {[form.role, form.city].filter(Boolean).join(' · ')}
+          </p>
+        )}
+      </div>
+
+      {/* Right sidebar icons (reel style) */}
+      <div className="absolute right-3 bottom-16 flex flex-col items-center gap-4">
+        {[{ icon: '♡', label: '' }, { icon: '💬', label: '' }, { icon: '➤', label: '' }].map((a, i) => (
+          <div key={i} className="flex flex-col items-center gap-0.5">
+            <span className="text-lg text-white drop-shadow">{a.icon}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════
+// REEL CARD (list item)
+// ═══════════════════════════════
+const ReelCard = ({ item, onToggle, onDelete }) => {
+  const [playing, setPlaying] = useState(false);
+  const vRef = useRef(null);
+
+  const toggle = (e) => {
+    e.stopPropagation();
+    if (!vRef.current) return;
+    if (playing) { vRef.current.pause(); setPlaying(false); }
+    else         { vRef.current.play();  setPlaying(true);  }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+      className="relative rounded-2xl overflow-hidden group"
+      style={{ aspectRatio: '9/16', background: '#000', opacity: item.is_active ? 1 : 0.45,
+               border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
+
+      {/* Media */}
+      {item.thumbnail_url && !playing ? (
+        <img src={item.thumbnail_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+      ) : null}
+      <video ref={vRef} src={item.video_url} className="absolute inset-0 w-full h-full object-cover"
+        loop playsInline style={{ display: (!item.thumbnail_url || playing) ? 'block' : 'none' }} />
+
+      {/* Gradient overlay */}
+      <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.08) 55%, transparent 100%)' }} />
+
+      {/* Status badge */}
+      <div className="absolute top-3 left-3">
+        <span className="font-mono text-[10px] px-2 py-0.5 rounded-full backdrop-blur-sm"
+          style={{ background: item.is_active ? 'rgba(34,197,94,0.25)' : 'rgba(239,68,68,0.25)',
+                   color: item.is_active ? '#4ade80' : '#f87171',
+                   border: `1px solid ${item.is_active ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.3)'}` }}>
+          {item.is_active ? 'Actif' : 'Masqué'}
+        </span>
+      </div>
+
+      {/* Stars top-right */}
+      <div className="absolute top-3 right-3">
+        <span className="text-xs" style={{ color: '#facc15', textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
+          {'★'.repeat(item.stars || 5)}
+        </span>
+      </div>
+
+      {/* Play/pause button center */}
+      <button onClick={toggle}
+        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+        <motion.div whileTap={{ scale: 0.9 }}
+          className="w-12 h-12 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.18)', backdropFilter: 'blur(8px)', border: '1.5px solid rgba(255,255,255,0.35)' }}>
+          {playing
+            ? <span className="text-white text-sm font-bold">II</span>
+            : <Play size={18} fill="white" color="white" className="ml-0.5" />}
+        </motion.div>
+      </button>
+
+      {/* Bottom info */}
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <p className="font-display text-sm font-bold text-white leading-tight">
+          {item.name || 'Anonyme'}
+        </p>
+        {(item.role || item.city) && (
+          <p className="font-mono text-[11px] mt-0.5 text-white/65">
+            {[item.role, item.city].filter(Boolean).join(' · ')}
+          </p>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2 mt-3">
+          <button onClick={() => onToggle(item)}
+            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-mono transition-all"
+            style={{ background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.8)',
+                     backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            {item.is_active ? <><EyeOff size={11} /> Masquer</> : <><Eye size={11} /> Afficher</>}
+          </button>
+          <button onClick={() => onDelete(item)}
+            className="p-1.5 rounded-lg transition-all"
+            style={{ background: 'rgba(239,68,68,0.18)', color: '#f87171',
+                     backdropFilter: 'blur(8px)', border: '1px solid rgba(239,68,68,0.25)' }}>
+            <Trash2 size={13} />
+          </button>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// ═══════════════════════════════
 // TESTIMONIALS MANAGER (Supabase)
 // ═══════════════════════════════
 const TestimonialsManager = () => {
@@ -701,127 +870,162 @@ const TestimonialsManager = () => {
         </Button>
       </div>
 
-      {/* Add form */}
+      {/* Add form — reel preview layout */}
       <AnimatePresence>
         {showForm && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-            className="rounded-2xl p-6 space-y-4"
+          <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -12 }}
+            className="rounded-2xl overflow-hidden"
             style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
-            <h3 className="font-display font-bold" style={{ color: 'var(--text-primary)' }}>Nouveau témoignage</h3>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input placeholder="Nom (optionnel)" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-              <Input placeholder="Ville (optionnel)" value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
-              <Input placeholder="Rôle (ex: Étudiante Moulage)" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))} />
-              <div>
-                <label className="font-mono text-xs mb-1 block" style={{ color: 'var(--text-muted)' }}>Étoiles</label>
-                <select value={form.stars} onChange={e => setForm(f => ({ ...f, stars: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-xl text-sm"
-                  style={{ background: 'var(--bg-section)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
-                  {[5,4,3,2,1].map(n => <option key={n} value={n}>{n} ★</option>)}
-                </select>
-              </div>
+            {/* Form header */}
+            <div className="px-6 pt-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
+              <h3 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
+                Nouveau témoignage
+              </h3>
+              <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                Aperçu en temps réel · format Reel 9:16
+              </p>
             </div>
 
-            {/* Video upload */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="font-mono text-xs mb-2 block" style={{ color: 'var(--text-muted)' }}>
-                  Vidéo * (.mp4, .mov, .webm)
-                </label>
-                <div onClick={() => videoRef.current?.click()}
-                  className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors"
-                  style={{ borderColor: videoFile ? 'var(--blue)' : 'var(--border)' }}>
-                  {videoFile ? (
-                    <p className="font-mono text-xs" style={{ color: 'var(--blue)' }}>{videoFile.name}</p>
-                  ) : (
-                    <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Cliquez pour choisir une vidéo</p>
-                  )}
-                  <input ref={videoRef} type="file" accept="video/*" className="hidden"
-                    onChange={e => setVideoFile(e.target.files[0])} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+              {/* Left — fields */}
+              <div className="p-6 space-y-4" style={{ borderRight: '1px solid var(--border)' }}>
+                <div className="grid grid-cols-2 gap-3">
+                  <Input placeholder="Nom (optionnel)" value={form.name}
+                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                  <Input placeholder="Ville (optionnel)" value={form.city}
+                    onChange={e => setForm(f => ({ ...f, city: e.target.value }))} />
                 </div>
-              </div>
-              <div>
-                <label className="font-mono text-xs mb-2 block" style={{ color: 'var(--text-muted)' }}>
-                  Miniature (optionnel)
-                </label>
-                <div onClick={() => thumbRef.current?.click()}
-                  className="border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-colors"
-                  style={{ borderColor: thumbFile ? 'var(--blue)' : 'var(--border)' }}>
-                  {thumbFile ? (
-                    <p className="font-mono text-xs" style={{ color: 'var(--blue)' }}>{thumbFile.name}</p>
-                  ) : (
-                    <p className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Cliquez pour choisir une image</p>
-                  )}
-                  <input ref={thumbRef} type="file" accept="image/*" className="hidden"
-                    onChange={e => setThumbFile(e.target.files[0])} />
-                </div>
-              </div>
-            </div>
+                <Input placeholder="Rôle (ex: Étudiante Moulage)" value={form.role}
+                  onChange={e => setForm(f => ({ ...f, role: e.target.value }))} />
 
-            <div className="flex gap-3">
-              <Button onClick={handleSubmit} loading={uploading} icon={<Upload size={14} />}>
-                {uploading ? 'Upload en cours...' : 'Enregistrer'}
-              </Button>
-              <Button variant="secondary" onClick={() => setShowForm(false)}>Annuler</Button>
+                <div>
+                  <label className="font-mono text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>Étoiles</label>
+                  <div className="flex gap-2">
+                    {[5,4,3,2,1].map(n => (
+                      <button key={n} onClick={() => setForm(f => ({ ...f, stars: n }))}
+                        className="flex-1 py-2 rounded-xl text-sm font-mono transition-all"
+                        style={{
+                          background: Number(form.stars) === n ? 'var(--blue)' : 'var(--bg-section)',
+                          color: Number(form.stars) === n ? '#fff' : 'var(--text-muted)',
+                          border: `1px solid ${Number(form.stars) === n ? 'var(--blue)' : 'var(--border)'}`,
+                        }}>
+                        {n}★
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Video drop zone */}
+                <div>
+                  <label className="font-mono text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+                    Vidéo * (.mp4, .mov, .webm)
+                  </label>
+                  <div onClick={() => videoRef.current?.click()}
+                    className="relative border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all group/drop"
+                    style={{ borderColor: videoFile ? 'var(--blue)' : 'var(--border)',
+                             background: videoFile ? 'rgba(37,99,235,0.04)' : 'var(--bg-section)' }}>
+                    <input ref={videoRef} type="file" accept="video/*" className="hidden"
+                      onChange={e => setVideoFile(e.target.files[0])} />
+                    {videoFile ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-6 h-6 rounded flex items-center justify-center" style={{ background: 'var(--blue)' }}>
+                          <Play size={10} fill="white" color="white" />
+                        </div>
+                        <span className="font-mono text-xs" style={{ color: 'var(--blue)' }}>{videoFile.name}</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <Upload size={18} style={{ color: 'var(--text-muted)' }} />
+                        <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Choisir une vidéo</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Thumbnail drop zone */}
+                <div>
+                  <label className="font-mono text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+                    Miniature (optionnel)
+                  </label>
+                  <div onClick={() => thumbRef.current?.click()}
+                    className="border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-all"
+                    style={{ borderColor: thumbFile ? 'var(--blue)' : 'var(--border)',
+                             background: thumbFile ? 'rgba(37,99,235,0.04)' : 'var(--bg-section)' }}>
+                    <input ref={thumbRef} type="file" accept="image/*" className="hidden"
+                      onChange={e => setThumbFile(e.target.files[0])} />
+                    {thumbFile ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-8 h-8 rounded overflow-hidden shrink-0">
+                          <img src={URL.createObjectURL(thumbFile)} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <span className="font-mono text-xs truncate" style={{ color: 'var(--blue)' }}>{thumbFile.name}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center gap-1.5">
+                        <ImageIcon size={14} style={{ color: 'var(--text-muted)' }} />
+                        <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Choisir une miniature</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-1">
+                  <Button onClick={handleSubmit} loading={uploading} icon={<Upload size={13} />}>
+                    {uploading ? 'Upload...' : 'Enregistrer'}
+                  </Button>
+                  <Button variant="secondary" onClick={() => { setShowForm(false); setVideoFile(null); setThumbFile(null); }}>
+                    Annuler
+                  </Button>
+                </div>
+              </div>
+
+              {/* Right — Reel phone preview */}
+              <div className="flex items-center justify-center p-8" style={{ background: 'var(--bg-section)' }}>
+                {/* Phone frame */}
+                <div className="relative" style={{ width: 200 }}>
+                  {/* Phone shell */}
+                  <div className="relative rounded-[36px] p-[10px]"
+                    style={{ background: 'linear-gradient(145deg, #2a2a2a, #1a1a1a)',
+                             boxShadow: '0 0 0 1px rgba(255,255,255,0.08), 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)' }}>
+                    {/* Notch */}
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 w-16 h-4 rounded-full z-10"
+                      style={{ background: '#111' }} />
+                    {/* Screen */}
+                    <div className="rounded-[28px] overflow-hidden bg-black"
+                      style={{ aspectRatio: '9/16', position: 'relative' }}>
+                      <ReelPreview videoFile={videoFile} thumbFile={thumbFile} form={form} />
+                    </div>
+                    {/* Home bar */}
+                    <div className="mx-auto mt-2 rounded-full" style={{ width: 60, height: 4, background: 'rgba(255,255,255,0.2)' }} />
+                  </div>
+
+                  {/* Label */}
+                  <p className="text-center font-mono text-[10px] mt-4" style={{ color: 'var(--text-muted)' }}>
+                    Aperçu · {videoFile ? 'cliquez pour lire' : 'choisissez une vidéo'}
+                  </p>
+                </div>
+              </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* List */}
+      {/* Reel grid */}
       {loading ? (
         <div className="text-center py-12 font-mono text-sm" style={{ color: 'var(--text-muted)' }}>Chargement...</div>
       ) : items.length === 0 ? (
-        <div className="text-center py-12 font-mono text-sm" style={{ color: 'var(--text-muted)' }}>Aucun témoignage</div>
+        <div className="flex flex-col items-center justify-center py-16 gap-4" style={{ color: 'var(--text-muted)' }}>
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)' }}>
+            <Play size={24} style={{ color: 'var(--text-muted)' }} />
+          </div>
+          <p className="font-mono text-sm">Aucun témoignage · Ajoutez votre premier reel</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {items.map(item => (
-            <div key={item.id} className="rounded-2xl overflow-hidden"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', opacity: item.is_active ? 1 : 0.5 }}>
-              {/* Video preview */}
-              <div className="relative aspect-video bg-black">
-                {item.thumbnail_url ? (
-                  <img src={item.thumbnail_url} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  <video src={item.video_url} className="w-full h-full object-cover" muted />
-                )}
-                <div className="absolute top-2 right-2 flex gap-1">
-                  <span className="font-mono text-[10px] px-2 py-0.5 rounded-full"
-                    style={{ background: item.is_active ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
-                             color: item.is_active ? '#16a34a' : '#dc2626' }}>
-                    {item.is_active ? 'Actif' : 'Masqué'}
-                  </span>
-                </div>
-              </div>
-              {/* Info */}
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-display text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                      {item.name || 'Anonyme'}
-                    </p>
-                    <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                      {[item.role, item.city].filter(Boolean).join(' · ') || '—'}
-                    </p>
-                    <p className="text-xs mt-1" style={{ color: 'var(--gold)' }}>{'★'.repeat(item.stars || 5)}</p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <button onClick={() => toggleActive(item)}
-                      className="p-1.5 rounded-lg transition-colors"
-                      style={{ background: 'var(--bg-section)', color: 'var(--text-muted)' }}
-                      title={item.is_active ? 'Masquer' : 'Afficher'}>
-                      {item.is_active ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                    <button onClick={() => setConfirm(item)}
-                      className="p-1.5 rounded-lg transition-colors hover:bg-red-50 hover:text-red-500"
-                      style={{ background: 'var(--bg-section)', color: 'var(--text-muted)' }}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ReelCard key={item.id} item={item} onToggle={toggleActive} onDelete={setConfirm} />
           ))}
         </div>
       )}
