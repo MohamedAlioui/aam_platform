@@ -618,108 +618,88 @@ const GalleryManager = () => {
 };
 
 // ═══════════════════════════════
-// FRAME CAPTURE — thumbnail from video
+// FRAME CAPTURE — status display
 // ═══════════════════════════════
-const FrameCapture = ({ videoFile, thumbFile, onCapture, thumbRef }) => {
-  const previewRef = useRef(null);
-  const canvasRef  = useRef(null);
-  const [captured, setCaptured] = useState(null);
+const FrameCapture = ({ videoFile, thumbFile, onCapture, thumbRef }) => (
+  <div>
+    <label className="font-mono text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+      Miniature (optionnel)
+    </label>
+    {thumbFile ? (
+      <div className="flex items-center gap-3 px-3 py-2 rounded-xl"
+        style={{ background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(74,222,128,0.25)' }}>
+        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+          <img src={URL.createObjectURL(thumbFile)} alt="" className="w-full h-full object-cover" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-mono text-xs font-bold" style={{ color: '#4ade80' }}>✓ Frame capturé depuis le reel</p>
+          <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>thumbnail.jpg</p>
+        </div>
+        <button onClick={() => onCapture(null)}
+          className="font-mono text-[10px] px-2 py-1 rounded-lg shrink-0"
+          style={{ background: 'var(--bg-section)', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
+          ✕ Effacer
+        </button>
+      </div>
+    ) : (
+      <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+        style={{ background: 'var(--bg-section)', border: '1px dashed var(--border)' }}>
+        {videoFile ? (
+          <>
+            <ImageIcon size={13} style={{ color: 'var(--blue)', flexShrink: 0 }} />
+            <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+              Jouez la vidéo → pausez → cliquez <strong style={{ color: 'var(--blue)' }}>Capturer</strong> sur l'aperçu
+            </span>
+          </>
+        ) : (
+          <>
+            <ImageIcon size={13} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+            <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+              Sélectionnez une vidéo pour capturer un frame
+            </span>
+          </>
+        )}
+      </div>
+    )}
+    <input ref={thumbRef} type="file" accept="image/*" className="hidden"
+      onChange={e => onCapture(e.target.files[0])} />
+  </div>
+);
 
+// ═══════════════════════════════
+// REEL PREVIEW — phone mockup + frame capture
+// ═══════════════════════════════
+const ReelPreview = ({ videoFile, thumbFile, form, onCapture }) => {
   const videoUrl = videoFile ? URL.createObjectURL(videoFile) : null;
+  const thumbUrl = thumbFile ? URL.createObjectURL(thumbFile) : null;
+  const [playing, setPlaying] = useState(false);
+  const [captured, setCaptured] = useState(false);
+  const vRef = useRef(null);
+  const canvasRef = useRef(null);
 
-  const capture = () => {
-    const video  = previewRef.current;
+  const toggle = (e) => {
+    e.stopPropagation();
+    if (!vRef.current) return;
+    if (playing) { vRef.current.pause(); setPlaying(false); }
+    else         { vRef.current.play();  setPlaying(true);  }
+  };
+
+  const capture = (e) => {
+    e.stopPropagation();
+    const video  = vRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
-    canvas.width  = video.videoWidth;
-    canvas.height = video.videoHeight;
+    video.pause(); setPlaying(false);
+    canvas.width  = video.videoWidth  || 720;
+    canvas.height = video.videoHeight || 1280;
     canvas.getContext('2d').drawImage(video, 0, 0);
     canvas.toBlob(blob => {
       if (!blob) return;
       const file = new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' });
-      const url  = URL.createObjectURL(blob);
-      setCaptured(url);
       onCapture(file);
+      setCaptured(true);
+      setTimeout(() => setCaptured(false), 2000);
     }, 'image/jpeg', 0.92);
-  };
-
-  const reset = () => { setCaptured(null); onCapture(null); };
-
-  return (
-    <div>
-      <label className="font-mono text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
-        Miniature (optionnel)
-      </label>
-
-      {!videoFile ? (
-        /* No video yet — fallback to file upload */
-        <div onClick={() => thumbRef.current?.click()}
-          className="border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-all"
-          style={{ borderColor: thumbFile ? 'var(--blue)' : 'var(--border)', background: 'var(--bg-section)' }}>
-          <input ref={thumbRef} type="file" accept="image/*" className="hidden"
-            onChange={e => { onCapture(e.target.files[0]); setCaptured(null); }} />
-          <div className="flex items-center justify-center gap-1.5">
-            <ImageIcon size={14} style={{ color: 'var(--text-muted)' }} />
-            <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-              Choisir une image ou sélectionnez d'abord une vidéo
-            </span>
-          </div>
-        </div>
-      ) : captured ? (
-        /* Captured frame preview */
-        <div className="rounded-xl overflow-hidden relative" style={{ border: '2px solid var(--blue)' }}>
-          <img src={captured} alt="thumbnail" className="w-full object-cover" style={{ maxHeight: 120 }} />
-          <button onClick={reset}
-            className="absolute top-2 right-2 px-2 py-1 rounded-lg font-mono text-[10px] transition-all"
-            style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', backdropFilter: 'blur(4px)' }}>
-            ↺ Recapturer
-          </button>
-          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded font-mono text-[10px]"
-            style={{ background: 'rgba(37,99,235,0.8)', color: '#fff' }}>
-            ✓ Frame capturé
-          </div>
-        </div>
-      ) : (
-        /* Video seeker + capture button */
-        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--bg-section)' }}>
-          <div className="relative" style={{ aspectRatio: '16/9' }}>
-            <video ref={previewRef} src={videoUrl}
-              className="w-full h-full object-cover"
-              controls playsInline
-              style={{ display: 'block' }} />
-          </div>
-          <div className="p-2 flex items-center justify-between gap-2">
-            <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>
-              Naviguez puis capturez le frame voulu
-            </span>
-            <button onClick={capture}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all"
-              style={{ background: 'var(--blue)', color: '#fff', boxShadow: '0 2px 8px rgba(37,99,235,0.3)' }}>
-              <ImageIcon size={12} /> Capturer
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Hidden canvas for frame extraction */}
-      <canvas ref={canvasRef} className="hidden" />
-    </div>
-  );
-};
-
-// ═══════════════════════════════
-// REEL PREVIEW — phone mockup
-// ═══════════════════════════════
-const ReelPreview = ({ videoFile, thumbFile, form }) => {
-  const videoUrl = videoFile ? URL.createObjectURL(videoFile) : null;
-  const thumbUrl = thumbFile ? URL.createObjectURL(thumbFile) : null;
-  const [playing, setPlaying] = useState(false);
-  const vRef = useRef(null);
-
-  const toggle = () => {
-    if (!vRef.current) return;
-    if (playing) { vRef.current.pause(); setPlaying(false); }
-    else         { vRef.current.play();  setPlaying(true);  }
   };
 
   if (!videoUrl) return (
@@ -733,27 +713,44 @@ const ReelPreview = ({ videoFile, thumbFile, form }) => {
   );
 
   return (
-    <div className="relative w-full h-full rounded-[28px] overflow-hidden bg-black" onClick={toggle} style={{ cursor: 'pointer' }}>
-      {/* Video or thumb */}
+    <div className="relative w-full h-full rounded-[28px] overflow-hidden bg-black" style={{ cursor: 'pointer' }}>
+      {/* Video or captured thumb */}
       {thumbUrl && !playing && (
         <img src={thumbUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
       )}
       <video ref={vRef} src={videoUrl} className="absolute inset-0 w-full h-full object-cover"
-        loop playsInline style={{ display: playing ? 'block' : thumbUrl ? 'none' : 'block' }} />
+        loop playsInline style={{ display: (!thumbUrl || playing) ? 'block' : 'none' }} />
 
-      {/* Dark gradient overlay */}
+      {/* Hidden canvas */}
+      <canvas ref={canvasRef} className="hidden" />
+
+      {/* Gradient overlay */}
       <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.1) 50%, transparent 100%)' }} />
 
-      {/* Play/pause */}
-      {!playing && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
-            className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', border: '2px solid rgba(255,255,255,0.4)' }}>
-            <Play size={20} fill="white" color="white" className="ml-1" />
-          </motion.div>
-        </div>
-      )}
+      {/* Play/pause — center */}
+      <div className="absolute inset-0 flex items-center justify-center" onClick={toggle}>
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
+          className="w-14 h-14 rounded-full flex items-center justify-center"
+          style={{ background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '2px solid rgba(255,255,255,0.3)' }}>
+          {playing
+            ? <span className="text-white text-xs font-bold tracking-widest">II</span>
+            : <Play size={20} fill="white" color="white" className="ml-1" />}
+        </motion.div>
+      </div>
+
+      {/* Capture button — top right */}
+      <motion.button
+        onClick={capture}
+        whileTap={{ scale: 0.9 }}
+        className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-lg font-mono text-[10px] font-bold transition-all"
+        style={{
+          background: captured ? 'rgba(34,197,94,0.85)' : 'rgba(0,0,0,0.55)',
+          color: '#fff',
+          backdropFilter: 'blur(8px)',
+          border: `1px solid ${captured ? 'rgba(74,222,128,0.5)' : 'rgba(255,255,255,0.2)'}`,
+        }}>
+        {captured ? '✓ Capturé' : <><ImageIcon size={10} /> Capturer</>}
+      </motion.button>
 
       {/* Stars top-left */}
       <div className="absolute top-3 left-3">
@@ -774,12 +771,10 @@ const ReelPreview = ({ videoFile, thumbFile, form }) => {
         )}
       </div>
 
-      {/* Right sidebar icons (reel style) */}
+      {/* Right sidebar icons */}
       <div className="absolute right-3 bottom-16 flex flex-col items-center gap-4">
-        {[{ icon: '♡', label: '' }, { icon: '💬', label: '' }, { icon: '➤', label: '' }].map((a, i) => (
-          <div key={i} className="flex flex-col items-center gap-0.5">
-            <span className="text-lg text-white drop-shadow">{a.icon}</span>
-          </div>
+        {['♡', '💬', '➤'].map((icon, i) => (
+          <span key={i} className="text-lg text-white drop-shadow">{icon}</span>
         ))}
       </div>
     </div>
@@ -1060,7 +1055,7 @@ const TestimonialsManager = () => {
                     {/* Screen */}
                     <div className="rounded-[28px] overflow-hidden bg-black"
                       style={{ aspectRatio: '9/16', position: 'relative' }}>
-                      <ReelPreview videoFile={videoFile} thumbFile={thumbFile} form={form} />
+                      <ReelPreview videoFile={videoFile} thumbFile={thumbFile} form={form} onCapture={setThumbFile} />
                     </div>
                     {/* Home bar */}
                     <div className="mx-auto mt-2 rounded-full" style={{ width: 60, height: 4, background: 'rgba(255,255,255,0.2)' }} />
