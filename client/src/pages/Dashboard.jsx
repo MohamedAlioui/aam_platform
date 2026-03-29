@@ -632,7 +632,7 @@ const FrameCapture = ({ videoFile, thumbFile, onCapture, thumbRef }) => (
           <img src={URL.createObjectURL(thumbFile)} alt="" className="w-full h-full object-cover" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-mono text-xs font-bold" style={{ color: '#4ade80' }}>✓ Frame capturé depuis le reel</p>
+          <p className="font-mono text-xs font-bold" style={{ color: '#4ade80' }}>✓ Miniature capturée automatiquement</p>
           <p className="font-mono text-[10px] mt-0.5 truncate" style={{ color: 'var(--text-muted)' }}>thumbnail.jpg</p>
         </div>
         <button onClick={() => onCapture(null)}
@@ -648,7 +648,7 @@ const FrameCapture = ({ videoFile, thumbFile, onCapture, thumbRef }) => (
           <>
             <ImageIcon size={13} style={{ color: 'var(--blue)', flexShrink: 0 }} />
             <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
-              Jouez la vidéo → pausez → cliquez <strong style={{ color: 'var(--blue)' }}>Capturer</strong> sur l'aperçu
+              Miniature auto-capturée · cliquez <strong style={{ color: 'var(--blue)' }}>Recapturer</strong> sur l'aperçu pour changer
             </span>
           </>
         ) : (
@@ -749,7 +749,7 @@ const ReelPreview = ({ videoFile, thumbFile, form, onCapture }) => {
           backdropFilter: 'blur(8px)',
           border: `1px solid ${captured ? 'rgba(74,222,128,0.5)' : 'rgba(255,255,255,0.2)'}`,
         }}>
-        {captured ? '✓ Capturé' : <><ImageIcon size={10} /> Capturer</>}
+        {captured ? '✓ Capturé' : <><ImageIcon size={10} /> Recapturer</>}
       </motion.button>
 
       {/* Stars top-left */}
@@ -886,6 +886,29 @@ const TestimonialsManager = () => {
   const videoRef = useRef(null);
   const thumbRef = useRef(null);
   const { success, error: showError } = useToastStore();
+
+  // Auto-capture thumbnail when video is selected
+  useEffect(() => {
+    if (!videoFile) { setThumbFile(null); return; }
+    const video  = document.createElement('video');
+    const canvas = document.createElement('canvas');
+    video.preload = 'metadata';
+    video.muted   = true;
+    video.src     = URL.createObjectURL(videoFile);
+    video.addEventListener('loadedmetadata', () => {
+      video.currentTime = Math.min(1, video.duration * 0.1);
+    });
+    video.addEventListener('seeked', () => {
+      canvas.width  = video.videoWidth  || 720;
+      canvas.height = video.videoHeight || 1280;
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      canvas.toBlob(blob => {
+        if (!blob) return;
+        setThumbFile(new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' }));
+        URL.revokeObjectURL(video.src);
+      }, 'image/jpeg', 0.92);
+    });
+  }, [videoFile]);
 
   if (!supabase) {
     return (
