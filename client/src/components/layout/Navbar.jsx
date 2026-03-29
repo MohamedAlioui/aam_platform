@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ShoppingBag, User, LogOut, LayoutDashboard, Sun, Moon } from 'lucide-react';
+import { Menu, X, User, LogOut, LayoutDashboard, Sun, Moon } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
-import { useCartStore } from '@/store/cartStore';
 import { useThemeStore } from '@/store/themeStore';
 import { NAV_LINKS } from '@/utils/constants';
 
@@ -13,11 +13,7 @@ const Navbar = ({ variant = 'default' }) => {
   const [lang, setLang]             = useState('ar');
   const location                    = useLocation();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const { items, toggleCart }       = useCartStore();
   const { theme, toggleTheme }      = useThemeStore();
-  const is6ix = variant === '6ix';
-
-  const totalCartItems = items.reduce((s, i) => s + i.quantity, 0);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -25,241 +21,325 @@ const Navbar = ({ variant = 'default' }) => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Close on route change
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
-  /* ─── 6ix variant ─── */
-  if (is6ix) {
-    return (
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-        background: scrolled ? 'rgba(0,0,0,0.96)' : 'transparent',
-        borderBottom: scrolled ? '1px solid rgba(255,255,255,0.1)' : 'none',
-        transition: 'all 0.35s ease',
-      }}>
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link to="/" className="font-display font-black text-2xl tracking-widest text-white">6IX</Link>
-          <button onClick={toggleCart} className="relative text-white p-1.5">
-            <ShoppingBag size={19} />
-            {totalCartItems > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full bg-white text-black">
-                {totalCartItems}
-              </span>
-            )}
-          </button>
-        </div>
-      </nav>
-    );
-  }
+  // Lock body scroll when mobile menu open
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
 
-  return (
-    <nav style={{
-      position: 'fixed', top: 0, left: 0, right: 0, zIndex: 50,
-      background: scrolled ? 'var(--navbar-bg)' : 'transparent',
-      backdropFilter: scrolled ? 'blur(20px)' : 'none',
-      borderBottom: scrolled ? '1px solid var(--border)' : 'none',
-      transition: 'all 0.35s ease',
-    }}>
-      <div className="max-w-7xl mx-auto px-6 h-16 md:h-18 flex items-center justify-between gap-4">
+  const isDark = theme === 'dark';
 
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-3 shrink-0">
-          <span className="font-display font-black text-2xl tracking-wider text-gradient-blue">AAM</span>
-          <div className="hidden md:block" style={{ borderLeft: '1px solid var(--border)', paddingLeft: '12px' }}>
-            <div className="font-arabic text-[11px] leading-tight" style={{ color: 'var(--text-muted)' }}>أكاديمية عربية للموضة</div>
-          </div>
-        </Link>
+  /* ─── Mobile overlay (rendered via portal to escape any stacking context) ─── */
+  const MobileMenu = () => createPortal(
+    <AnimatePresence>
+      {mobileOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            key="backdrop"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setMobileOpen(false)}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9998,
+              background: 'rgba(0,0,0,0.45)',
+              backdropFilter: 'blur(2px)',
+            }}
+          />
 
-        {/* Desktop links */}
-        <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
-          {NAV_LINKS.map(link => {
-            const active = location.pathname === link.path;
-            return (
-              <Link
-                key={link.path}
-                to={link.path}
-                className="relative px-3 py-2 rounded-lg font-arabic text-sm transition-all duration-200"
+          {/* Drawer panel */}
+          <motion.div
+            key="drawer"
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            style={{
+              position: 'fixed', top: 0, right: 0, bottom: 0,
+              width: 'min(320px, 100vw)',
+              zIndex: 9999,
+              background: isDark ? '#0f1117' : '#ffffff',
+              borderLeft: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(0,0,0,0.08)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '18px 24px',
+              borderBottom: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.07)',
+            }}>
+              <span style={{
+                fontFamily: 'var(--font-display, monospace)',
+                fontWeight: 900, fontSize: 20, letterSpacing: '0.12em',
+                color: isDark ? '#ffffff' : '#0a0a0a',
+              }}>AAM</span>
+              <button
+                onClick={() => setMobileOpen(false)}
                 style={{
-                  color: active ? 'var(--blue)' : 'var(--text-secondary)',
-                  background: active ? 'var(--blue-pale)' : 'transparent',
-                  fontWeight: active ? '700' : '500',
-                }}
-                onMouseEnter={e => {
-                  if (!active) {
-                    e.currentTarget.style.color = 'var(--blue)';
-                    e.currentTarget.style.background = 'var(--blue-pale)';
-                  }
-                }}
-                onMouseLeave={e => {
-                  if (!active) {
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                    e.currentTarget.style.background = 'transparent';
-                  }
+                  width: 32, height: 32,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.12)',
+                  background: 'transparent',
+                  color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)',
+                  cursor: 'pointer',
+                  borderRadius: 6,
                 }}
               >
-                {lang === 'ar' ? link.label_ar : link.label_fr}
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* Right controls */}
-        <div className="flex items-center gap-2 shrink-0">
-
-          {/* Language */}
-          <button
-            onClick={() => setLang(l => l === 'ar' ? 'fr' : 'ar')}
-            className="hidden md:flex font-mono text-xs px-2.5 py-1.5 rounded-md transition-all duration-200"
-            style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--blue)'; e.currentTarget.style.color = 'var(--blue)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
-          >
-            {lang === 'ar' ? 'FR' : 'AR'}
-          </button>
-
-          {/* Theme toggle */}
-          <motion.button
-            onClick={toggleTheme}
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.92 }}
-            className="w-8 h-8 flex items-center justify-center rounded-lg"
-            style={{ border: '1px solid var(--border)', color: 'var(--blue)', background: 'var(--bg-card)' }}
-            title={theme === 'dark' ? 'Mode Clair' : 'Mode Sombre'}
-          >
-            <AnimatePresence mode="wait" initial={false}>
-              {theme === 'dark' ? (
-                <motion.span key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>
-                  <Sun size={14} />
-                </motion.span>
-              ) : (
-                <motion.span key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.18 }}>
-                  <Moon size={14} />
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
-
-          {/* Cart (shop only) */}
-          {location.pathname.startsWith('/shop') && (
-            <button onClick={toggleCart} className="relative p-1.5" style={{ color: 'var(--text-secondary)' }}>
-              <ShoppingBag size={18} />
-              {totalCartItems > 0 && (
-                <motion.span
-                  initial={{ scale: 0 }} animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center rounded-full text-white"
-                  style={{ background: 'var(--blue)' }}
-                >
-                  {totalCartItems}
-                </motion.span>
-              )}
-            </button>
-          )}
-
-          {/* Auth */}
-          {isAuthenticated ? (
-            <div className="hidden md:flex items-center gap-1">
-              {user?.role === 'admin' && (
-                <Link to="/dashboard" className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-                >
-                  <LayoutDashboard size={16} />
-                </Link>
-              )}
-              <button onClick={logout} className="p-1.5 rounded-lg transition-colors" style={{ color: 'var(--text-muted)' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-              >
-                <LogOut size={16} />
+                <X size={16} />
               </button>
             </div>
-          ) : (
-            <Link
-              to="/login"
-              className="hidden md:flex items-center gap-2 font-arabic text-sm px-4 py-1.5 rounded-lg transition-all duration-200"
-              style={{ background: 'var(--blue)', color: '#fff', fontWeight: '600' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'var(--blue-light)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'var(--blue)'}
-            >
-              <User size={13} />
-              {lang === 'ar' ? 'دخول' : 'Connexion'}
-            </Link>
-          )}
 
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="md:hidden p-1.5 rounded-lg"
-            style={{ color: 'var(--text-primary)' }}
-          >
-            {mobileOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -16 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 z-40 flex flex-col"
-            style={{ background: 'var(--bg-page)', paddingTop: '5rem' }}
-          >
-            <button onClick={() => setMobileOpen(false)} className="absolute top-5 right-6" style={{ color: 'var(--text-muted)' }}>
-              <X size={22} />
-            </button>
-
-            <div className="flex flex-col px-8 gap-2">
-              {NAV_LINKS.map((link, i) => (
-                <motion.div
-                  key={link.path}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <Link
-                    to={link.path}
-                    className="block font-arabic text-xl py-3 px-4 rounded-xl transition-all"
-                    style={{
-                      color: location.pathname === link.path ? 'var(--blue)' : 'var(--text-secondary)',
-                      background: location.pathname === link.path ? 'var(--blue-pale)' : 'transparent',
-                      fontWeight: location.pathname === link.path ? '700' : '500',
-                    }}
+            {/* Nav links */}
+            <nav style={{ flex: 1, padding: '12px 16px' }}>
+              {NAV_LINKS.map((link, i) => {
+                const active = location.pathname === link.path;
+                return (
+                  <motion.div
+                    key={link.path}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.045, duration: 0.3 }}
                   >
-                    {lang === 'ar' ? link.label_ar : link.label_fr}
-                  </Link>
-                </motion.div>
-              ))}
+                    <Link
+                      to={link.path}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 16px',
+                        marginBottom: 4,
+                        borderRadius: 10,
+                        textDecoration: 'none',
+                        fontFamily: 'var(--font-arabic, sans-serif)',
+                        fontSize: 16,
+                        fontWeight: active ? 700 : 500,
+                        color: active
+                          ? 'var(--blue, #2563eb)'
+                          : isDark ? 'rgba(255,255,255,0.75)' : 'rgba(0,0,0,0.7)',
+                        background: active
+                          ? isDark ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.07)'
+                          : 'transparent',
+                        transition: 'all 0.15s',
+                      }}
+                    >
+                      {lang === 'ar' ? link.label_ar : link.label_fr}
+                      {active && (
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--blue, #2563eb)', flexShrink: 0 }} />
+                      )}
+                    </Link>
+                  </motion.div>
+                );
+              })}
+            </nav>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: NAV_LINKS.length * 0.05 + 0.1 }}
-                className="flex items-center gap-3 mt-6 pt-6"
-                style={{ borderTop: '1px solid var(--border)' }}
+            {/* Footer controls */}
+            <div style={{
+              padding: '16px 24px',
+              borderTop: isDark ? '1px solid rgba(255,255,255,0.07)' : '1px solid rgba(0,0,0,0.07)',
+              display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+            }}>
+              <button
+                onClick={toggleTheme}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '8px 14px', borderRadius: 8,
+                  border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.12)',
+                  background: 'transparent',
+                  color: 'var(--blue, #2563eb)',
+                  fontFamily: 'var(--font-arabic, sans-serif)',
+                  fontSize: 13, cursor: 'pointer',
+                }}
               >
+                {isDark ? <Sun size={14} /> : <Moon size={14} />}
+                {isDark ? 'Mode Clair' : 'Mode Sombre'}
+              </button>
+
+              <button
+                onClick={() => setLang(l => l === 'ar' ? 'fr' : 'ar')}
+                style={{
+                  padding: '8px 14px', borderRadius: 8,
+                  border: isDark ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(0,0,0,0.12)',
+                  background: 'transparent',
+                  color: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)',
+                  fontFamily: 'monospace', fontSize: 12, cursor: 'pointer',
+                  letterSpacing: '0.1em',
+                }}
+              >
+                {lang === 'ar' ? 'FR' : 'AR'}
+              </button>
+
+              {isAuthenticated && (
                 <button
-                  onClick={toggleTheme}
-                  className="flex items-center gap-2 font-arabic text-sm px-4 py-2 rounded-lg"
-                  style={{ border: '1px solid var(--border)', color: 'var(--blue)' }}
+                  onClick={() => { logout(); setMobileOpen(false); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '8px 14px', borderRadius: 8,
+                    border: '1px solid rgba(239,68,68,0.3)',
+                    background: 'transparent', color: '#ef4444',
+                    fontFamily: 'monospace', fontSize: 12, cursor: 'pointer',
+                  }}
                 >
-                  {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-                  {theme === 'dark' ? 'Mode Clair' : 'Mode Sombre'}
+                  <LogOut size={13} /> Déconnexion
                 </button>
-                <button onClick={() => setLang(l => l === 'ar' ? 'fr' : 'ar')}
-                  className="font-mono text-xs px-3 py-2 rounded-lg"
-                  style={{ border: '1px solid var(--border)', color: 'var(--text-muted)' }}
-                >
-                  {lang === 'ar' ? 'FR' : 'AR'}
-                </button>
-              </motion.div>
+              )}
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
+        </>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+
+  return (
+    <>
+      <nav style={{
+        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+        background: scrolled ? 'var(--navbar-bg)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px)' : 'none',
+        borderBottom: scrolled ? '1px solid var(--border)' : 'none',
+        transition: 'all 0.35s ease',
+      }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6" style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+
+          {/* Logo */}
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0, textDecoration: 'none' }}>
+            <span className="font-display font-black text-2xl tracking-wider text-gradient-blue">AAM</span>
+            <div className="hidden md:block" style={{ borderLeft: '1px solid var(--border)', paddingLeft: 12 }}>
+              <div className="font-arabic text-[11px] leading-tight" style={{ color: 'var(--text-muted)' }}>
+                أكاديمية عربية للموضة
+              </div>
+            </div>
+          </Link>
+
+          {/* Desktop nav links */}
+          <div className="hidden md:flex" style={{ alignItems: 'center', gap: 2, flex: 1, justifyContent: 'center' }}>
+            {NAV_LINKS.map(link => {
+              const active = location.pathname === link.path;
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className="font-arabic text-sm transition-all duration-200"
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    textDecoration: 'none',
+                    color: active ? 'var(--blue)' : 'var(--text-secondary)',
+                    background: active ? 'var(--blue-pale)' : 'transparent',
+                    fontWeight: active ? 700 : 500,
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) {
+                      e.currentTarget.style.color = 'var(--blue)';
+                      e.currentTarget.style.background = 'var(--blue-pale)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) {
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                      e.currentTarget.style.background = 'transparent';
+                    }
+                  }}
+                >
+                  {lang === 'ar' ? link.label_ar : link.label_fr}
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* Right controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+
+            {/* Language toggle — desktop only */}
+            <button
+              onClick={() => setLang(l => l === 'ar' ? 'fr' : 'ar')}
+              className="hidden md:flex font-mono text-xs transition-all duration-200"
+              style={{ padding: '6px 10px', border: '1px solid var(--border)', color: 'var(--text-muted)', background: 'transparent', cursor: 'pointer', borderRadius: 6 }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--blue)'; e.currentTarget.style.color = 'var(--blue)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+            >
+              {lang === 'ar' ? 'FR' : 'AR'}
+            </button>
+
+            {/* Theme toggle */}
+            <motion.button
+              onClick={toggleTheme}
+              whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}
+              style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border)', color: 'var(--blue)', background: 'var(--bg-card)', cursor: 'pointer', borderRadius: 8 }}
+              title={isDark ? 'Mode Clair' : 'Mode Sombre'}
+            >
+              <AnimatePresence mode="wait" initial={false}>
+                {isDark ? (
+                  <motion.span key="sun" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.18 }}>
+                    <Sun size={14} />
+                  </motion.span>
+                ) : (
+                  <motion.span key="moon" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.18 }}>
+                    <Moon size={14} />
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+
+            {/* Auth — desktop only */}
+            {isAuthenticated ? (
+              <div className="hidden md:flex" style={{ alignItems: 'center', gap: 4 }}>
+                {user?.role === 'admin' && (
+                  <Link to="/dashboard"
+                    style={{ padding: 6, borderRadius: 8, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 0.2s', display: 'flex' }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--blue)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  >
+                    <LayoutDashboard size={16} />
+                  </Link>
+                )}
+                <button onClick={logout}
+                  style={{ padding: 6, borderRadius: 8, color: 'var(--text-muted)', background: 'transparent', border: 'none', cursor: 'pointer', transition: 'color 0.2s', display: 'flex' }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                >
+                  <LogOut size={16} />
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="hidden md:flex items-center gap-2 font-arabic text-sm"
+                style={{ padding: '6px 16px', borderRadius: 8, background: 'var(--blue)', color: '#fff', textDecoration: 'none', fontWeight: 600, transition: 'background 0.2s' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--blue-light)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'var(--blue)'}
+              >
+                <User size={13} />
+                {lang === 'ar' ? 'دخول' : 'Connexion'}
+              </Link>
+            )}
+
+            {/* Hamburger — mobile only */}
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="md:hidden"
+              style={{
+                width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                border: '1px solid var(--border)', color: 'var(--text-primary)',
+                background: 'transparent', cursor: 'pointer', borderRadius: 8,
+              }}
+              aria-label="Menu"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <MobileMenu />
+    </>
   );
 };
 
