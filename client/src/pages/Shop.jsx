@@ -1,6 +1,7 @@
 import { useState, useEffect, Suspense, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useInView, useScroll, useTransform } from 'framer-motion';
-import { MapPin, Clock, Phone, ChevronRight, MessageCircle, CalendarCheck, Navigation, Store, Sparkles, Diamond } from 'lucide-react';
+import { MapPin, Clock, Phone, ChevronRight, MessageCircle, CalendarCheck, Navigation, Store, Sparkles, Diamond, Menu, X, ArrowLeft } from 'lucide-react';
 import ProductViewer3D from '@/components/3d/ProductViewer3D';
 import api from '@/utils/api';
 
@@ -239,6 +240,7 @@ const ShopPage = () => {
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [category, setCategory] = useState('Tout');
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const heroRef = useRef(null);
   const storesRef = useRef(null);
   const heroInView = useInView(heroRef, { once: true });
@@ -265,29 +267,42 @@ const ShopPage = () => {
     );
   }, [products, category]);
 
+  const selectCategory = (cat) => { setCategory(cat); setMobileNavOpen(false); };
+
   return (
     <main className="min-h-screen" style={{ background: C.bg, color: C.ink }}>
 
-      {/* ── Sticky nav ── */}
-      <div className="sticky top-0 z-40"
+      {/* ══ Navbar (fixed, replaces the App-level Navbar for shop) ══ */}
+      <nav className="fixed top-0 left-0 right-0 z-50"
         style={{ background: C.bgGlass, backdropFilter: 'blur(24px)', borderBottom: `1px solid ${C.borderGold}` }}>
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="font-mono font-black text-xl tracking-widest"
-              style={{ background: goldGradient, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+
+          {/* Left: back link + logo */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
+            <Link to="/"
+              className="flex items-center gap-1.5 font-mono text-[9px] tracking-widest uppercase transition-all shrink-0"
+              style={{ color: C.inkFaint }}
+              onMouseEnter={e => e.currentTarget.style.color = C.gold}
+              onMouseLeave={e => e.currentTarget.style.color = C.inkFaint}
+            >
+              <ArrowLeft size={11} />
+              <span className="hidden sm:inline">AAM</span>
+            </Link>
+            <div className="w-px h-4 shrink-0" style={{ background: C.borderGold }} />
+            <span className="font-mono font-black text-lg sm:text-xl tracking-widest shrink-0" style={{ color: C.gold }}>
               6IX
             </span>
-            <span className="hidden sm:block w-px h-4" style={{ background: C.borderGold }} />
-            <span className="hidden sm:block font-mono text-[9px] tracking-[0.4em] uppercase" style={{ color: C.inkFaint }}>
-              {STORES.length} Boutiques en Tunisie
+            <span className="hidden xl:block font-mono text-[9px] tracking-[0.4em] uppercase truncate" style={{ color: C.inkFaint }}>
+              {STORES.length} Boutiques · Tunisie
             </span>
           </div>
 
-          {/* Category tabs */}
-          <div className="hidden md:flex items-center">
+          {/* Center: category tabs (md+) */}
+          <div className="hidden md:flex items-center flex-1 justify-center">
             {ALL_CATEGORIES.map(cat => (
-              <button key={cat} onClick={() => setCategory(cat)}
-                className="font-mono text-[10px] tracking-[0.3em] uppercase px-4 py-1.5 transition-all duration-200"
+              <button key={cat} onClick={() => selectCategory(cat)}
+                className="font-mono text-[10px] tracking-[0.3em] uppercase px-3 lg:px-4 py-1.5 transition-all duration-200 whitespace-nowrap"
                 style={{
                   color: category === cat ? C.gold : C.inkFaint,
                   borderBottom: category === cat ? `1px solid ${C.gold}` : '1px solid transparent',
@@ -297,18 +312,84 @@ const ShopPage = () => {
             ))}
           </div>
 
-          <motion.button
-            onClick={() => storesRef.current?.scrollIntoView({ behavior: 'smooth' })}
-            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            className="flex items-center gap-2 px-4 py-2 font-mono text-[10px] tracking-widest uppercase transition-all"
-            style={{ border: `1px solid ${C.borderGold}`, color: C.inkFaint }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = C.borderGold; e.currentTarget.style.color = C.inkFaint; }}
-          >
-            <Store size={12} /> Nos Boutiques
-          </motion.button>
+          {/* Right: boutiques + hamburger */}
+          <div className="flex items-center gap-2 shrink-0">
+            <motion.button
+              onClick={() => storesRef.current?.scrollIntoView({ behavior: 'smooth' })}
+              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+              className="hidden sm:flex items-center gap-1.5 px-3 py-2 font-mono text-[10px] tracking-widest uppercase transition-all"
+              style={{ border: `1px solid ${C.borderGold}`, color: C.inkFaint }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = C.gold; e.currentTarget.style.color = C.gold; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = C.borderGold; e.currentTarget.style.color = C.inkFaint; }}
+            >
+              <Store size={11} />
+              <span className="hidden lg:inline">Nos Boutiques</span>
+              <span className="lg:hidden">Boutiques</span>
+            </motion.button>
+
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setMobileNavOpen(!mobileNavOpen)}
+              className="md:hidden flex items-center justify-center w-8 h-8 transition-all"
+              style={{ border: `1px solid ${mobileNavOpen ? C.gold : C.borderGold}`, color: mobileNavOpen ? C.gold : C.inkFaint }}
+            >
+              {mobileNavOpen ? <X size={14} /> : <Menu size={14} />}
+            </button>
+          </div>
         </div>
-      </div>
+
+        {/* Mobile dropdown */}
+        <AnimatePresence>
+          {mobileNavOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="overflow-hidden md:hidden"
+              style={{ background: C.bgCard, borderTop: `1px solid ${C.borderGold}` }}
+            >
+              <div className="px-4 py-3 space-y-1">
+                <p className="font-mono text-[8px] tracking-[0.5em] uppercase mb-2 px-3" style={{ color: C.goldDark }}>
+                  Collection
+                </p>
+                {ALL_CATEGORIES.map((cat, i) => (
+                  <motion.button
+                    key={cat}
+                    initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.04 }}
+                    onClick={() => selectCategory(cat)}
+                    className="w-full flex items-center justify-between px-3 py-2.5 font-mono text-[11px] tracking-[0.3em] uppercase transition-all"
+                    style={{
+                      background: category === cat ? 'rgba(201,169,110,0.1)' : 'transparent',
+                      color: category === cat ? C.gold : C.inkMid,
+                      border: `1px solid ${category === cat ? C.borderGold : 'transparent'}`,
+                    }}
+                  >
+                    {cat}
+                    {category === cat && <span style={{ color: C.gold, fontSize: 10 }}>✦</span>}
+                  </motion.button>
+                ))}
+
+                <div className="h-px my-2" style={{ background: C.borderGold, opacity: 0.5 }} />
+
+                <button
+                  onClick={() => { storesRef.current?.scrollIntoView({ behavior: 'smooth' }); setMobileNavOpen(false); }}
+                  className="w-full flex items-center gap-2 px-3 py-2.5 font-mono text-[11px] tracking-widest uppercase transition-all"
+                  style={{ color: C.inkFaint }}
+                  onMouseEnter={e => e.currentTarget.style.color = C.gold}
+                  onMouseLeave={e => e.currentTarget.style.color = C.inkFaint}
+                >
+                  <Store size={12} /> Nos Boutiques
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
+
+      {/* Navbar height offset */}
+      <div style={{ height: 56 }} />
 
       {/* ── Marquee ── */}
       <Marquee />

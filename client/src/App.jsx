@@ -59,7 +59,7 @@ const AppRoutes = () => {
     <>
       <ScrollProgress />
       {!isShopPage && !isDashboard && <Navbar />}
-      {isShopPage  && <Navbar variant="6ix" />}
+      {/* Shop page has its own built-in responsive nav */}
 
       <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={location.pathname}>
@@ -82,7 +82,7 @@ const AppRoutes = () => {
       </AnimatePresence>
 
       {!isShopPage && !isDashboard && <Footer />}
-      {isShopPage  && <Footer variant="6ix" />}
+      {/* Shop page has its own built-in footer */}
 
       {/* WhatsApp button — show on all pages except dashboard */}
       {!isDashboard  && <WhatsAppButton />}
