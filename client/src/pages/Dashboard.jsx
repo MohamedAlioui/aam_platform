@@ -491,34 +491,79 @@ const OrdersManager = () => {
 // ═══════════════════════════════
 // REGISTRATIONS MANAGER
 // ═══════════════════════════════
+const PAY_COLORS = { paid: 'green', unpaid: 'red', refunded: 'gold' };
+const PAY_LABELS = { paid: '✓ Payé', unpaid: '✗ Impayé', refunded: '↩ Remboursé' };
+
 const RegistrationsManager = () => {
-  const [regs, setRegs]       = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { success }           = useToastStore();
+  const [regs, setRegs]           = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [editReg, setEditReg]     = useState(null); // reg being edited
+  const { success, error: toastError } = useToastStore();
 
-  useEffect(() => { api.get('/registrations').then(r => { setRegs(r.data.registrations || []); setLoading(false); }).catch(() => setLoading(false)); }, []);
+  useEffect(() => {
+    api.get('/registrations')
+      .then(r => { setRegs(r.data.registrations || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, []);
 
-  const updateStatus = async (id, status) => {
-    await api.put(`/registrations/${id}`, { status });
-    setRegs(regs.map(r => r._id === id ? { ...r, status } : r));
-    success('Statut mis à jour');
+  const updateField = async (id, patch) => {
+    try {
+      await api.put(`/registrations/${id}`, patch);
+      setRegs(prev => prev.map(r => r._id === id ? { ...r, ...patch } : r));
+      success('Mise à jour effectuée');
+    } catch {
+      toastError('Erreur lors de la mise à jour');
+    }
   };
 
   const columns = [
-    { key: 'userId',        label: 'Étudiant',  render: v => <div><div className="font-arabic text-sm">{v?.name || '—'}</div><div className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{v?.email || ''}</div></div> },
+    { key: 'userId',        label: 'Étudiant',  render: v => (
+      <div>
+        <div className="font-arabic text-sm">{v?.name || '—'}</div>
+        <div className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>{v?.email || ''}</div>
+      </div>
+    )},
     { key: 'courseId',      label: 'Cours',     render: v => <span className="font-arabic text-xs">{v?.title_fr || v?.title_ar || '—'}</span> },
-    { key: 'status',        label: 'Statut',    render: v => <Badge variant={v === 'confirmed' ? 'green' : v === 'cancelled' ? 'red' : 'blue'}>{v}</Badge> },
-    { key: 'paymentStatus', label: 'Paiement',  render: v => <Badge variant={v === 'paid' ? 'green' : 'red'}>{v}</Badge> },
-    { key: 'createdAt',     label: 'Date',      render: v => v ? new Date(v).toLocaleDateString('fr-FR') : '—' },
+    { key: 'status',        label: 'Statut',    render: v => <Badge variant={v === 'confirmed' ? 'green' : v === 'cancelled' ? 'red' : v === 'completed' ? 'gold' : 'blue'}>{v}</Badge> },
+    { key: 'paymentStatus', label: 'Paiement',  render: (v, row) => (
+      <select
+        value={v || 'unpaid'}
+        onChange={e => updateField(row._id, { paymentStatus: e.target.value })}
+        onClick={e => e.stopPropagation()}
+        className="font-mono text-[10px] tracking-wide rounded-lg px-2 py-1 border cursor-pointer transition-all"
+        style={{
+          background: v === 'paid' ? 'rgba(34,197,94,0.12)' : v === 'refunded' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)',
+          color:      v === 'paid' ? '#16a34a'               : v === 'refunded' ? '#b45309'                : '#dc2626',
+          borderColor: v === 'paid' ? 'rgba(34,197,94,0.3)' : v === 'refunded' ? 'rgba(245,158,11,0.3)'  : 'rgba(239,68,68,0.3)',
+        }}
+      >
+        <option value="unpaid">✗ Impayé</option>
+        <option value="paid">✓ Payé</option>
+        <option value="refunded">↩ Remboursé</option>
+      </select>
+    )},
+    { key: 'createdAt', label: 'Date', render: v => v ? new Date(v).toLocaleDateString('fr-FR') : '—' },
   ];
 
   return (
     <div className="space-y-6">
-      <h2 className="font-display text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Inscriptions</h2>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Inscriptions</h2>
+          <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            {regs.length} inscription{regs.length !== 1 ? 's' : ''} ·{' '}
+            <span style={{ color: '#16a34a' }}>{regs.filter(r => r.paymentStatus === 'paid').length} payées</span>{' '}·{' '}
+            <span style={{ color: '#dc2626' }}>{regs.filter(r => r.paymentStatus === 'unpaid').length} impayées</span>
+          </p>
+        </div>
+      </div>
+
       <DataTable columns={columns} data={regs} loading={loading} actions={(row) => (
         <div className="flex gap-1">
-          <button onClick={() => updateStatus(row._id, 'confirmed')} title="Confirmer" className="p-1.5 text-green-500/60 hover:text-green-600 transition-colors"><Check size={14} /></button>
-          <button onClick={() => updateStatus(row._id, 'cancelled')} title="Annuler"   className="p-1.5 text-red-400/60 hover:text-red-500 transition-colors"><X size={14} /></button>
+          <button onClick={() => updateField(row._id, { status: 'confirmed' })} title="Confirmer"
+            className="p-1.5 text-green-500/60 hover:text-green-600 transition-colors"><Check size={14} /></button>
+          <button onClick={() => updateField(row._id, { status: 'cancelled' })} title="Annuler"
+            className="p-1.5 text-red-400/60 hover:text-red-500 transition-colors"><X size={14} /></button>
         </div>
       )} />
     </div>
