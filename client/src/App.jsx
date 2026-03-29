@@ -27,6 +27,7 @@ const Register   = lazy(() => import('@/pages/Register'));
 const Dashboard  = lazy(() => import('@/pages/Dashboard'));
 const MyCourses      = lazy(() => import('@/pages/MyCourses'));
 const Testimonials   = lazy(() => import('@/pages/Testimonials'));
+const NotFoundPage   = lazy(() => import('@/pages/NotFound'));
 
 // Page loader — theme-aware
 const PageLoader = () => (
@@ -47,18 +48,6 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
-// 404 page
-const NotFound = () => (
-  <div className="min-h-screen flex items-center justify-center px-6" style={{ background: 'var(--bg-page)' }}>
-    <div className="text-center max-w-md">
-      <div className="font-display font-black text-gradient-blue mb-4" style={{ fontSize: '8rem', lineHeight: 1 }}>404</div>
-      <div className="w-24 h-1 rounded-full mx-auto mb-6" style={{ background: 'linear-gradient(to right, var(--blue), transparent)' }} />
-      <h2 className="font-arabic text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>الصفحة غير موجودة</h2>
-      <p className="font-editorial italic text-lg mb-8" style={{ color: 'var(--text-muted)' }}>Page introuvable</p>
-      <a href="/" className="btn-primary px-10 inline-block">العودة للرئيسية</a>
-    </div>
-  </div>
-);
 
 // App shell with animated routes
 const AppRoutes = () => {
@@ -88,7 +77,7 @@ const AppRoutes = () => {
           <Route path="/dashboard/*" element={
             <AdminRoute><PageWrapper><Dashboard /></PageWrapper></AdminRoute>
           } />
-          <Route path="*" element={<PageWrapper><NotFound /></PageWrapper>} />
+          <Route path="*" element={<PageWrapper><NotFoundPage /></PageWrapper>} />
         </Routes>
       </AnimatePresence>
 
