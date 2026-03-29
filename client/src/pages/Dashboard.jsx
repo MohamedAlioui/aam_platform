@@ -633,6 +633,14 @@ const TestimonialsManager = () => {
   const thumbRef = useRef(null);
   const { success, error: showError } = useToastStore();
 
+  if (!supabase) {
+    return (
+      <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-6 text-center text-yellow-400">
+        Supabase non configuré — ajoutez <code>VITE_SUPABASE_URL</code> et <code>VITE_SUPABASE_ANON_KEY</code> dans <code>client/.env</code>
+      </div>
+    );
+  }
+
   const load = async () => {
     setLoading(true);
     const { data } = await supabase.from('testimonials').select('*').order('created_at', { ascending: false });
