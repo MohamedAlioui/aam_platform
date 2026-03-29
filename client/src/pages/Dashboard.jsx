@@ -618,6 +618,96 @@ const GalleryManager = () => {
 };
 
 // ═══════════════════════════════
+// FRAME CAPTURE — thumbnail from video
+// ═══════════════════════════════
+const FrameCapture = ({ videoFile, thumbFile, onCapture, thumbRef }) => {
+  const previewRef = useRef(null);
+  const canvasRef  = useRef(null);
+  const [captured, setCaptured] = useState(null);
+
+  const videoUrl = videoFile ? URL.createObjectURL(videoFile) : null;
+
+  const capture = () => {
+    const video  = previewRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    canvas.toBlob(blob => {
+      if (!blob) return;
+      const file = new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' });
+      const url  = URL.createObjectURL(blob);
+      setCaptured(url);
+      onCapture(file);
+    }, 'image/jpeg', 0.92);
+  };
+
+  const reset = () => { setCaptured(null); onCapture(null); };
+
+  return (
+    <div>
+      <label className="font-mono text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
+        Miniature (optionnel)
+      </label>
+
+      {!videoFile ? (
+        /* No video yet — fallback to file upload */
+        <div onClick={() => thumbRef.current?.click()}
+          className="border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-all"
+          style={{ borderColor: thumbFile ? 'var(--blue)' : 'var(--border)', background: 'var(--bg-section)' }}>
+          <input ref={thumbRef} type="file" accept="image/*" className="hidden"
+            onChange={e => { onCapture(e.target.files[0]); setCaptured(null); }} />
+          <div className="flex items-center justify-center gap-1.5">
+            <ImageIcon size={14} style={{ color: 'var(--text-muted)' }} />
+            <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>
+              Choisir une image ou sélectionnez d'abord une vidéo
+            </span>
+          </div>
+        </div>
+      ) : captured ? (
+        /* Captured frame preview */
+        <div className="rounded-xl overflow-hidden relative" style={{ border: '2px solid var(--blue)' }}>
+          <img src={captured} alt="thumbnail" className="w-full object-cover" style={{ maxHeight: 120 }} />
+          <button onClick={reset}
+            className="absolute top-2 right-2 px-2 py-1 rounded-lg font-mono text-[10px] transition-all"
+            style={{ background: 'rgba(0,0,0,0.6)', color: '#fff', backdropFilter: 'blur(4px)' }}>
+            ↺ Recapturer
+          </button>
+          <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded font-mono text-[10px]"
+            style={{ background: 'rgba(37,99,235,0.8)', color: '#fff' }}>
+            ✓ Frame capturé
+          </div>
+        </div>
+      ) : (
+        /* Video seeker + capture button */
+        <div className="rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)', background: 'var(--bg-section)' }}>
+          <div className="relative" style={{ aspectRatio: '16/9' }}>
+            <video ref={previewRef} src={videoUrl}
+              className="w-full h-full object-cover"
+              controls playsInline
+              style={{ display: 'block' }} />
+          </div>
+          <div className="p-2 flex items-center justify-between gap-2">
+            <span className="font-mono text-[10px]" style={{ color: 'var(--text-muted)' }}>
+              Naviguez puis capturez le frame voulu
+            </span>
+            <button onClick={capture}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-xs font-bold transition-all"
+              style={{ background: 'var(--blue)', color: '#fff', boxShadow: '0 2px 8px rgba(37,99,235,0.3)' }}>
+              <ImageIcon size={12} /> Capturer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden canvas for frame extraction */}
+      <canvas ref={canvasRef} className="hidden" />
+    </div>
+  );
+};
+
+// ═══════════════════════════════
 // REEL PREVIEW — phone mockup
 // ═══════════════════════════════
 const ReelPreview = ({ videoFile, thumbFile, form }) => {
@@ -943,32 +1033,8 @@ const TestimonialsManager = () => {
                   </div>
                 </div>
 
-                {/* Thumbnail drop zone */}
-                <div>
-                  <label className="font-mono text-xs mb-1.5 block" style={{ color: 'var(--text-muted)' }}>
-                    Miniature (optionnel)
-                  </label>
-                  <div onClick={() => thumbRef.current?.click()}
-                    className="border-2 border-dashed rounded-xl p-3 text-center cursor-pointer transition-all"
-                    style={{ borderColor: thumbFile ? 'var(--blue)' : 'var(--border)',
-                             background: thumbFile ? 'rgba(37,99,235,0.04)' : 'var(--bg-section)' }}>
-                    <input ref={thumbRef} type="file" accept="image/*" className="hidden"
-                      onChange={e => setThumbFile(e.target.files[0])} />
-                    {thumbFile ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-8 h-8 rounded overflow-hidden shrink-0">
-                          <img src={URL.createObjectURL(thumbFile)} alt="" className="w-full h-full object-cover" />
-                        </div>
-                        <span className="font-mono text-xs truncate" style={{ color: 'var(--blue)' }}>{thumbFile.name}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-center gap-1.5">
-                        <ImageIcon size={14} style={{ color: 'var(--text-muted)' }} />
-                        <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Choisir une miniature</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {/* Thumbnail — capture from video */}
+                <FrameCapture videoFile={videoFile} thumbFile={thumbFile} onCapture={setThumbFile} thumbRef={thumbRef} />
 
                 <div className="flex gap-3 pt-1">
                   <Button onClick={handleSubmit} loading={uploading} icon={<Upload size={13} />}>
