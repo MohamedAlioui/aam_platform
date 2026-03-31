@@ -19,7 +19,7 @@ import ToastContainer, { useToastStore } from '@/components/ui/Toast';
 import api from '@/utils/api';
 import { supabase, uploadVideo, uploadThumb, deleteFile } from '@/utils/supabase';
 import { io } from 'socket.io-client';
-import { COURSE_CATEGORIES } from '@/utils/constants';
+import { COURSE_CATEGORIES, GALLERY_CATEGORIES } from '@/utils/constants';
 
 const LEVELS    = ['مبتدئ', 'متوسط', 'متقدم'];
 const PROD_CATS = ['T-Shirt', 'Hoodie', 'Cap', 'Jacket', 'Accessories'];
@@ -611,52 +611,212 @@ const UsersManager = () => {
 // ═══════════════════════════════
 // GALLERY MANAGER
 // ═══════════════════════════════
+const GALLERY_CATS = GALLERY_CATEGORIES.filter(c => c.value !== 'all');
+
 const GalleryManager = () => {
-  const [images, setImages]       = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [confirm, setConfirm]     = useState(null);
+  const [images, setImages]         = useState([]);
+  const [filter, setFilter]         = useState('all');
+  const [confirm, setConfirm]       = useState(null);   // _id to delete
+  const [showForm, setShowForm]     = useState(false);
+  const [uploading, setUploading]   = useState(false);
+  const [preview, setPreview]       = useState(null);   // object URL
+  const [form, setForm]             = useState({ file: null, category: 'collection', title_ar: '', title_fr: '', featured: false });
   const fileRef = useRef(null);
   const { success, error: showError } = useToastStore();
 
-  useEffect(() => { api.get('/gallery').then(r => setImages(r.data.images || [])).catch(() => {}); }, []);
+  useEffect(() => {
+    const params = filter !== 'all' ? { category: filter } : {};
+    api.get('/gallery', { params }).then(r => setImages(r.data.images || [])).catch(() => {});
+  }, [filter]);
 
-  const handleUpload = async (e) => {
+  const openForm = () => { setForm({ file: null, category: 'collection', title_ar: '', title_fr: '', featured: false }); setPreview(null); setShowForm(true); };
+  const closeForm = () => { if (preview) URL.revokeObjectURL(preview); setShowForm(false); setPreview(null); };
+
+  const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    if (preview) URL.revokeObjectURL(preview);
+    setPreview(URL.createObjectURL(file));
+    setForm(f => ({ ...f, file }));
+    e.target.value = '';
+  };
+
+  const handleSubmit = async () => {
+    if (!form.file) return showError('Sélectionnez une image');
     setUploading(true);
     const fd = new FormData();
-    fd.append('image', file);
-    fd.append('category', 'collection');
+    fd.append('image', form.file);
+    fd.append('category', form.category);
+    fd.append('title_ar', form.title_ar);
+    fd.append('title_fr', form.title_fr);
+    fd.append('featured', String(form.featured));
     try {
       const r = await api.post('/gallery', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setImages(prev => [r.data.image, ...prev]);
-      success('Image uploadée ✓');
+      success('Image ajoutée ✓');
+      closeForm();
     } catch { showError('Erreur upload'); }
     finally { setUploading(false); }
   };
 
+  const handleDelete = async () => {
+    if (!confirm) return;
+    try {
+      await api.delete(`/gallery/${confirm}`);
+      setImages(prev => prev.filter(i => i._id !== confirm));
+      success('Image supprimée');
+    } catch { showError('Erreur suppression'); }
+    finally { setConfirm(null); }
+  };
+
+  const displayed = images;
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Galerie</h2>
-        <Button icon={<Plus size={16} />} onClick={() => fileRef.current?.click()} loading={uploading} size="sm">Uploader</Button>
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleUpload} />
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="font-display text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>Galerie de Créations</h2>
+          <p className="font-mono text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{images.length} image{images.length !== 1 ? 's' : ''}</p>
+        </div>
+        <Button icon={<Plus size={16} />} onClick={openForm} size="sm">Ajouter une image</Button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {images.map(img => (
-          <div key={img._id} className="relative group aspect-square rounded-xl overflow-hidden" style={{ border: '1px solid var(--border)' }}>
-            {img.url ? <img src={imgSrc(img.url)} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--bg-section)' }}><ImageIcon size={16} style={{ color: 'var(--text-muted)' }} /></div>
-            }
-            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <button onClick={() => setConfirm(img._id)} className="text-white hover:text-red-300 transition-colors"><Trash2 size={18} /></button>
-            </div>
-          </div>
+
+      {/* Category filter */}
+      <div className="flex flex-wrap gap-2">
+        {[{ value: 'all', label_fr: 'Tout' }, ...GALLERY_CATS].map(cat => (
+          <button key={cat.value} onClick={() => setFilter(cat.value)}
+            className="font-mono text-[10px] tracking-widest uppercase px-3 py-1.5 rounded-full border transition-all"
+            style={{
+              borderColor: filter === cat.value ? 'var(--blue)' : 'var(--border)',
+              background:  filter === cat.value ? 'rgba(37,99,235,0.1)' : 'transparent',
+              color:       filter === cat.value ? 'var(--blue)' : 'var(--text-muted)',
+            }}>
+            {cat.label_fr}
+          </button>
         ))}
       </div>
+
+      {/* Grid */}
+      {displayed.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 rounded-2xl"
+          style={{ border: '2px dashed var(--border)', background: 'var(--bg-section)' }}>
+          <ImageIcon size={32} style={{ color: 'var(--text-muted)' }} className="mb-3" />
+          <p className="font-mono text-sm" style={{ color: 'var(--text-muted)' }}>Aucune image</p>
+          <button onClick={openForm} className="mt-4 font-mono text-xs underline" style={{ color: 'var(--blue)' }}>
+            Ajouter la première image
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+          {displayed.map(img => (
+            <div key={img._id} className="relative group aspect-square rounded-xl overflow-hidden"
+              style={{ border: '1px solid var(--border)' }}>
+              {img.url
+                ? <img src={imgSrc(img.url)} alt={img.title_fr || ''} className="w-full h-full object-cover" loading="lazy" />
+                : <div className="w-full h-full flex items-center justify-center" style={{ background: 'var(--bg-section)' }}>
+                    <ImageIcon size={16} style={{ color: 'var(--text-muted)' }} />
+                  </div>
+              }
+              {/* Category badge */}
+              <div className="absolute top-2 left-2">
+                <span className="font-mono text-[8px] tracking-wide uppercase px-1.5 py-0.5 rounded"
+                  style={{ background: 'rgba(0,0,0,0.65)', color: 'rgba(255,255,255,0.85)' }}>
+                  {GALLERY_CATS.find(c => c.value === img.category)?.label_fr || img.category}
+                </span>
+              </div>
+              {/* Featured star */}
+              {img.featured && (
+                <div className="absolute top-2 right-2">
+                  <Star size={12} fill="var(--gold)" color="var(--gold)" />
+                </div>
+              )}
+              {/* Hover overlay */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                style={{ background: 'rgba(0,0,0,0.55)' }}>
+                <button onClick={() => setConfirm(img._id)}
+                  className="w-9 h-9 rounded-full flex items-center justify-center transition-colors"
+                  style={{ background: 'rgba(239,68,68,0.9)' }}>
+                  <Trash2 size={15} color="white" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Upload modal */}
+      <AnimatePresence>
+        {showForm && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] backdrop-blur-sm" style={{ background: 'rgba(0,0,0,0.45)' }}
+              onClick={closeForm} />
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center p-4 pointer-events-none">
+              <div className="w-full max-w-md rounded-2xl p-6 space-y-5 pointer-events-auto"
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-card)' }}>
+                {/* Modal header */}
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Ajouter une image</h3>
+                  <button onClick={closeForm} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                    style={{ background: 'var(--bg-section)' }} onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-section)'}>
+                    <X size={14} style={{ color: 'var(--text-muted)' }} />
+                  </button>
+                </div>
+
+                {/* Image picker */}
+                <div
+                  onClick={() => fileRef.current?.click()}
+                  className="relative aspect-video rounded-xl overflow-hidden cursor-pointer flex items-center justify-center transition-all"
+                  style={{ border: `2px dashed ${preview ? 'var(--blue)' : 'var(--border)'}`, background: 'var(--bg-section)' }}>
+                  {preview
+                    ? <img src={preview} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                    : <div className="flex flex-col items-center gap-2">
+                        <Upload size={24} style={{ color: 'var(--text-muted)' }} />
+                        <span className="font-mono text-xs" style={{ color: 'var(--text-muted)' }}>Cliquer pour choisir une image</span>
+                      </div>
+                  }
+                  {preview && (
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity"
+                      style={{ background: 'rgba(0,0,0,0.5)' }}>
+                      <span className="font-mono text-xs text-white">Changer</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Category */}
+                <Select label="Catégorie" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  options={GALLERY_CATS.map(c => ({ value: c.value, label: c.label_fr }))} />
+
+                {/* Titles */}
+                <Input label="Titre (AR)" value={form.title_ar} onChange={e => setForm(f => ({ ...f, title_ar: e.target.value }))}
+                  placeholder="عنوان الصورة" dir="rtl" />
+                <Input label="Titre (FR)" value={form.title_fr} onChange={e => setForm(f => ({ ...f, title_fr: e.target.value }))}
+                  placeholder="Titre de l'image" />
+
+                {/* Featured */}
+                <Toggle label="Image mise en avant (⭐ Featured)" checked={form.featured} onChange={v => setForm(f => ({ ...f, featured: v }))} />
+
+                {/* Actions */}
+                <div className="flex gap-3 pt-1">
+                  <Button variant="secondary" onClick={closeForm} className="flex-1">Annuler</Button>
+                  <Button onClick={handleSubmit} loading={uploading} disabled={!form.file} className="flex-1">
+                    Ajouter
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirm */}
       <ConfirmModal isOpen={!!confirm} onClose={() => setConfirm(null)}
         message="Supprimer cette image de la galerie ?"
-        onConfirm={() => { api.delete(`/gallery/${confirm}`); setImages(images.filter(i => i._id !== confirm)); success('Image supprimée'); }}
+        onConfirm={handleDelete}
       />
     </div>
   );

@@ -54,7 +54,23 @@ const Hero = () => {
   }, []);
 
   return (
-    <section className="relative min-h-screen overflow-hidden" style={{ background: 'var(--bg-page)' }}>
+    <section className="relative min-h-screen overflow-hidden">
+
+      {/* Video background */}
+      <video
+        autoPlay muted loop playsInline
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover"
+        style={{ zIndex: 0 }}
+      >
+        <source src="/assets/hero-video.mp4" type="video/mp4" />
+      </video>
+
+      {/* Dark gradient overlay */}
+      <div
+        className="absolute inset-0"
+        style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.7) 100%)', zIndex: 1 }}
+      />
 
       <div className="flex min-h-screen items-center">
 
