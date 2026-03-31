@@ -16,15 +16,15 @@ export const getImages = async (req, res) => {
 
 export const uploadImage = async (req, res) => {
   try {
-    if (!req.file) return res.status(400).json({ success: false, message: 'No image uploaded' });
+    const { url, title_ar, title_fr, category, featured } = req.body;
+    if (!url) return res.status(400).json({ success: false, message: 'Image URL is required' });
 
-    const { title_ar, title_fr, category, featured } = req.body;
     const image = await GalleryImage.create({
-      url: req.file.path,
+      url,
       title_ar,
       title_fr,
-      category,
-      featured: featured === 'true'
+      category: category || 'collection',
+      featured: featured === true || featured === 'true',
     });
 
     res.status(201).json({ success: true, image });

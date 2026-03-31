@@ -17,7 +17,7 @@ import Badge from '@/components/ui/Badge';
 import Input from '@/components/ui/Input';
 import ToastContainer, { useToastStore } from '@/components/ui/Toast';
 import api from '@/utils/api';
-import { supabase, uploadVideo, uploadThumb, deleteFile } from '@/utils/supabase';
+import { supabase, uploadVideo, uploadThumb, deleteFile, uploadGalleryImage, deleteGalleryImage } from '@/utils/supabase';
 import { io } from 'socket.io-client';
 import { COURSE_CATEGORIES, GALLERY_CATEGORIES } from '@/utils/constants';
 
@@ -641,26 +641,30 @@ const GalleryManager = () => {
 
   const handleSubmit = async () => {
     if (!form.file) return showError('Sélectionnez une image');
+    if (!supabase) return showError('Supabase non configuré');
     setUploading(true);
-    const fd = new FormData();
-    fd.append('image', form.file);
-    fd.append('category', form.category);
-    fd.append('title_ar', form.title_ar);
-    fd.append('title_fr', form.title_fr);
-    fd.append('featured', String(form.featured));
     try {
-      const r = await api.post('/gallery', fd);
+      const url = await uploadGalleryImage(form.file);
+      const r = await api.post('/gallery', {
+        url,
+        category: form.category,
+        title_ar: form.title_ar,
+        title_fr: form.title_fr,
+        featured: form.featured,
+      });
       setImages(prev => [r.data.image, ...prev]);
       success('Image ajoutée ✓');
       closeForm();
-    } catch { showError('Erreur upload'); }
+    } catch (e) { showError('Erreur upload: ' + (e.message || e)); }
     finally { setUploading(false); }
   };
 
   const handleDelete = async () => {
     if (!confirm) return;
     try {
+      const img = images.find(i => i._id === confirm);
       await api.delete(`/gallery/${confirm}`);
+      if (img?.url) await deleteGalleryImage(img.url).catch(() => {});
       setImages(prev => prev.filter(i => i._id !== confirm));
       success('Image supprimée');
     } catch { showError('Erreur suppression'); }

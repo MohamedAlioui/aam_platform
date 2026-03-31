@@ -9,7 +9,8 @@ export const supabase = (SUPABASE_URL && SUPABASE_ANON)
 
 /* ── helpers ── */
 
-export const BUCKET = 'testimonials';
+export const BUCKET         = 'testimonials';
+export const GALLERY_BUCKET = 'gallery';
 
 /** Upload a video file → returns public URL */
 export async function uploadVideo(file) {
@@ -45,4 +46,26 @@ export async function deleteFile(publicUrl) {
   const path = publicUrl.split(`/${BUCKET}/`)[1];
   if (!path) return;
   await supabase.storage.from(BUCKET).remove([path]);
+}
+
+/** Upload a gallery image → returns public URL */
+export async function uploadGalleryImage(file) {
+  if (!supabase) throw new Error('Supabase not configured');
+  const ext  = file.name.split('.').pop();
+  const name = `gallery_${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from(GALLERY_BUCKET).upload(name, file, {
+    cacheControl: '3600',
+    upsert: false,
+  });
+  if (error) throw error;
+  const { data } = supabase.storage.from(GALLERY_BUCKET).getPublicUrl(name);
+  return data.publicUrl;
+}
+
+/** Delete a gallery image from storage by its full public URL */
+export async function deleteGalleryImage(publicUrl) {
+  if (!supabase) return;
+  const filePath = publicUrl.split(`/${GALLERY_BUCKET}/`)[1];
+  if (!filePath) return;
+  await supabase.storage.from(GALLERY_BUCKET).remove([filePath]);
 }
