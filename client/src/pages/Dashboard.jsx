@@ -219,9 +219,8 @@ const CoursesManager = () => {
       fd.append('instructor[name]', form.instructor_name);
       if (imageFile) fd.append('image', imageFile);
 
-      const cfg = { headers: { 'Content-Type': 'multipart/form-data' } };
-      if (editing) await api.put(`/courses/${editing._id}`, fd, cfg);
-      else         await api.post('/courses', fd, cfg);
+      if (editing) await api.put(`/courses/${editing._id}`, fd);
+      else         await api.post('/courses', fd);
       success(editing ? 'Cours mis à jour ✓' : 'Cours créé ✓');
       setModalOpen(false); load();
     } catch (e) { showError(e.response?.data?.message || 'Erreur'); }
@@ -347,9 +346,8 @@ const ProductsManager = () => {
       const fd = new FormData();
       Object.entries({ ...form, price: Number(form.price), stock: Number(form.stock) }).forEach(([k, v]) => fd.append(k, v));
       imageFiles.forEach(f => fd.append('images', f));
-      const cfg = { headers: { 'Content-Type': 'multipart/form-data' } };
-      if (editing) await api.put(`/products/${editing._id}`, fd, cfg);
-      else         await api.post('/products', fd, cfg);
+      if (editing) await api.put(`/products/${editing._id}`, fd);
+      else         await api.post('/products', fd);
       success(editing ? 'Produit mis à jour ✓' : 'Produit créé ✓');
       setModalOpen(false); load();
     } catch (e) { showError(e.response?.data?.message || 'Erreur'); }
@@ -651,7 +649,7 @@ const GalleryManager = () => {
     fd.append('title_fr', form.title_fr);
     fd.append('featured', String(form.featured));
     try {
-      const r = await api.post('/gallery', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const r = await api.post('/gallery', fd);
       setImages(prev => [r.data.image, ...prev]);
       success('Image ajoutée ✓');
       closeForm();
